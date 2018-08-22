@@ -1,0 +1,53 @@
+window FreePosSClass:1
+  wtag("language","ENG"), wtag("product","*"), wtag("productcode","*"), wtag("device","computer")
+begin
+  WindowBegin("Paste Position",FreePosSClass,CGslist,-);
+  SetWRect(240,80,700,298);
+  Sizeable(-1,-1,0,0);
+  UseView(PosVc);
+  SpawnClass(PosDClass);
+  RecordList(4,17,-21,-39);
+  RlColKey(4,2,"Code",Code,false,MainKey);
+  RlColKey(100,100,"Area",LocArea,false,LocArea);
+  RlColKey(200,200, "Comment",Comment,false,Comment);
+  RlColKey(300,300,"Location",Location,false,Location);
+  RlColKey(400,400,"Height",Height,false,Height);
+  SearchField("Search");
+  EndWindow;
+end;
+
+window PosSClass:1
+  wtag("language","ENG"), wtag("product","*"), wtag("productcode","*"), wtag("device","computer")
+begin
+  WindowBegin("Paste Position",PosSClass,CGslist,-);
+  SetWRect(240,80,700,298);
+  Sizeable(-1,-1,0,0);
+  UseView(PosVc);
+  SpawnClass(PosDClass);
+  RecordList(4,17,-21,-39);
+  RlColKey(4,2,"Code",Code,false,MainKey);
+  RlColKey(100,100,"Area",LocArea,false,LocArea);
+  RlColKey(200,200, "Comment",Comment,false,Comment);
+  RlColKey(300,300,"Location",Location,false,Location);
+  RlColKey(400,400,"Height",Height,false,Height);
+  SearchField("Search");
+  EndWindow;
+end;
+
+window UsedPosSClass:1
+  wtag("language","ENG"), wtag("product","*"), wtag("productcode","*"), wtag("device","computer")
+begin
+  WindowBegin("Paste Position",UsedPosSClass,CGslist,-);
+  SetWRect(240,80,700,298);
+  Sizeable(-1,-1,0,0);
+  UseView(PosVc);
+  SpawnClass(PosDClass);
+  RecordList(4,17,-21,-39);
+  RlColKey(4,2,"Code",Code,false,MainKey);
+  RlColKey(100,100,"Area",LocArea,false,LocArea);
+  RlColKey(200,200, "Comment",Comment,false,Comment);
+  RlColKey(300,300,"Location",Location,false,Location);
+  RlColKey(400,400,"Height",Height,false,Height);
+  SearchField("Search");
+  EndWindow;
+end;

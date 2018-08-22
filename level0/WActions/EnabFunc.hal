@@ -1,0 +1,11 @@
+// Edit Start ---------------------------------------------- Edit Start
+	//Tuesday, 21 August 2018 12:49:43
+	
+global function boolean HasPositions()
+	begin
+	
+	HasPositions = true;
+return;
+end;
+	// Edit End ---------------------------------------------- Edit End
+	
