@@ -1,3 +1,4 @@
+//<halrule>server-only</halrule>
 external function Integer ItemCostPerLocation(record INVc);
 external function Integer FindYVars(string,string,string);
 external procedure ExtractObj(string,var Integer,var string);
@@ -23,8 +24,7 @@ BEGIN
   boolean TrHs,testf1,prints;// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 5 September 2018 12:22:53
 	val qtypos;
   record PosVc Posr;
-  
-  
+    
   btr.ArtCode = item;
   btr.SerialNr = serialnr;
   if (ReadFirstMain(btr,2,true)) then begin
@@ -630,7 +630,8 @@ BEGIN
             end;
             // Edit Start ---------------------------------------------- Edit Start
 	//Wednesday, 5 September 2018 12:26:08
-	
+							
+
             if(printf and nonblank(position))then begin
             	IHr.ArtCode = item;
             	TrHs = true;
@@ -643,6 +644,7 @@ BEGIN
             		if(IHr.Location!=SBr.Location)then begin testf1 = false; end;
             		
             		if(testf1)then begin
+            			messagebox(0,IHr.RemQty);
             			qtypos = qtypos + IHr.RemQty;
             		end;
             	end;
@@ -655,7 +657,6 @@ BEGIN
             end;
             
 	// Edit End ---------------------------------------------- Edit End
-	
             if (printf) then begin
               PrintOneBatch(item,SBr.Serial,SBr.Quant,first,SBr.Location);
             end;

@@ -1,3 +1,4 @@
+//<halrule>server-only</halrule>
 external procedure HTLocationClassification(string,string,var string);
 external procedure HTLocationGroup(string,string,var string);
 external function Boolean HasContactClassification();
