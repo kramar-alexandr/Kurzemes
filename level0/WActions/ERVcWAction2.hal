@@ -965,6 +965,7 @@ end;
 function string 5 TransCurrencyBOEtoISO(string curcode)
 begin
   string 5 res;
+  
   switch (curcode) begin
     case "XUDLADS": res = "AUD";
     case "XUDLCDS": res = "CAD";
@@ -1040,14 +1041,16 @@ begin
       ratev = 0;
       
       cnt2 = XmlCountChildren(xmlreply,curstrkey);
+
       for (j=0;j<cnt2;j=j+1) begin
         nstr = curstrkey & "/Cube[" & j & "]";
+
         if (XmlGetAttribute(xmlreply,nstr,"CAT_ORD")=="6") then begin
           curncyname = XmlGetAttribute(xmlreply,nstr,"VAL_DESC");
         end;
         if (nonblank(XmlGetAttribute(xmlreply,nstr,"TIME"))) then begin
           ratedate = DateFromString(XmlGetAttribute(xmlreply,nstr,"TIME"),"YYYY-MM-DD");
-          if (ratedate==AddDay(RepSpec.d1,-1)) then begin
+          if (ratedate==AddDay(RepSpec.d1,0)) then begin
             unitsv = 1.00;
             rate = XmlGetAttribute(xmlreply,nstr,"OBS_VALUE");
             ratev = StringToValue(rate,M4Rate,"",".");
@@ -1077,7 +1080,7 @@ begin
         end;
         if (nonblank(XmlGetAttribute(xmlreply,nstr,"TIME"))) then begin
           ratedate = DateFromString(XmlGetAttribute(xmlreply,nstr,"TIME"),"YYYY-MM-DD");
-          if (ratedate==AddDay(RepSpec.d1,-1)) then begin
+          if (ratedate==AddDay(RepSpec.d1,0)) then begin
             unitsv = 1.00;
             rate = XmlGetAttribute(xmlreply,nstr,"OBS_VALUE");
             ratev = StringToValue(rate,M4Rate,"",".");
@@ -1086,7 +1089,7 @@ begin
       end;
       if (nonblank(curncy) and ratev!=0.0) then begin
         ratev = ratev/rateb1;
-        AddCurencyRate(RepSpec,BCb,ERb,curncy,curncyname,unitsv,rateb1/rateb2,ratev,AddDay(ratedate,1));
+        AddCurencyRate(RepSpec,BCb,ERb,curncy,curncyname,unitsv,rateb1/rateb2,ratev,AddDay(ratedate,0));
         ratev = 0;
       end;
     end;

@@ -1,4 +1,5 @@
 //<halrule>server-only</halrule>
+external procedure VIGetVATCodeAccNumbers(string,record APAccBlock,string,Integer,var string,var string);
 external function Boolean GetAPPayRate(LongInt,var val,var val,var val,var val,var val,string,Date);
 external procedure GetVATRowFromBlock(string,record VATCodeBlock,var row VATCodeBlock);
 external procedure GetVATRow(string,var row VATCodeBlock);
@@ -177,7 +178,7 @@ begin
   val pfr,pto1,pto2,pbr1,pbr2,baseprep,baseprep2;
   val diff,tprepay,prepayval,vatval;
   val rs,bookrs,coff;
-  string 255 apacc,tstr,objstr,onaccacc,vatobjstr,vatacc;
+  string 255 apacc,tstr,objstr,onaccacc,vatobjstr,vatacc,svatacc,pvatacc;
   record BaseCurBlock BCb;
   Date bd;
   row VATCodeBlock VATCbrw;
@@ -363,17 +364,24 @@ begin
           res = 1912;
           goto LAddVIPrePayRow;
         end;
-        AddEuroCurncyTrRow(gTRp,vatacc,vatobjstr,AddVATCodeToVATAccRows(VIrw.VATCode),tstr,bookrs,false,dc2,totsum,VIp.CurncyCode,
-                           pfr,pto1,pto2,pbr1,pbr2,rs,blankval,-1,VIp.InvType==kInvoiceTypeCredit or VIp.InvType==kInvoiceTypeCreditSpecialSales,"");
         FindPurchVATAcc(VIrw.VATCode,vatacc);
         GetVATRow(VIrw.VATCode,VATCbrw);
         TaxRr.Code = VATCbrw.TaxRules;
         ReadFirstMain(TaxRr,1,true);
-        if (APAccb.PostVIVATonVATCorr!=0) then begin
-          vatacc = VATCbrw.CorPurchVATAcc;
+        if (TaxRr.VATType==kVATTypeReversed) then begin
+          VIGetVATCodeAccNumbers(VIrw.VATCode,APAccb,VIp.VECode,VIp.InvType,vatacc,pvatacc);
         end;
-        if (blank(vatacc)) then begin        
-          vatacc = APAccb.VATAcc;
+        AddEuroCurncyTrRow(gTRp,vatacc,vatobjstr,AddVATCodeToVATAccRows(VIrw.VATCode),tstr,bookrs,false,dc2,totsum,VIp.CurncyCode,
+                           pfr,pto1,pto2,pbr1,pbr2,rs,blankval,-1,VIp.InvType==kInvoiceTypeCredit or VIp.InvType==kInvoiceTypeCreditSpecialSales,"");
+        if (TaxRr.VATType==kVATTypeReversed) then begin
+          vatacc = pvatacc;
+        end else begin
+          if (APAccb.PostVIVATonVATCorr!=0) then begin
+            vatacc = VATCbrw.CorPurchVATAcc;
+          end;
+          if (blank(vatacc)) then begin        
+            vatacc = APAccb.VATAcc;
+          end;
         end;
         if (GetAccName(vatacc,tstr,60)==false) then begin
           res = 1912;
