@@ -1032,7 +1032,7 @@ LkInvoiceRowTypeNormal_MakeTrans:;
               end;
               svatval = svatval + rs;
             end;
-            if (VIp.ExportFlag==1) or (vt==kVATTypeReversed and HasLocalization("FIN,LTU,LVA,PRT")) then begin
+            if (VIp.ExportFlag==1)/* or (vt==kVATTypeReversed and HasLocalization("FIN,LTU,LVA,PRT"))*/ then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 24 October 2018 13:19:28
               if (blank(svatacc)) then begin
                 svatacc = APAccRec.EUVATBAcc;
               end;
@@ -1042,7 +1042,7 @@ LkInvoiceRowTypeNormal_MakeTrans:;
               end;  
               rs = MulRateToBase1(VIp.CurncyCode,rvatval,vatfrrate,vattorate1,vattorate2,vatbaserate1,vatbaserate2,DefaultCurRoundOff);
               if (CheckTTRPerRow("VIVc",svatacc,vatobjstr,dc2,taccnumber,0)) then begin end;
-              AddEuroCurncyTrRow(gTRp,svatacc,vatobjstr,AddVATCodeToVATAccRows(VATrw.VATCode),tstr,rs,false,dc2,totsum,
+              AddEuroCurncyTrRow(gTRp,svatacc,vatobjstr,"",tstr,rs,false,dc2,totsum,
                                  VIp.CurncyCode,vatfrrate,vattorate1,vattorate2,vatbaserate1,vatbaserate2,rvatval,nilv,-1,VIp.InvType==kInvoiceTypeCredit or VIp.InvType==kInvoiceTypeCreditSpecialSales,taccnumber);
               totrvrsvat = totrvrsvat + rvatval;
             end;
@@ -1249,7 +1249,7 @@ retention changes
   end;
   if (nonblank(VIp.VATVal)) then begin//what if mix of reverse and not reverse ?
   //only when fully reversed vat
-  if (VIp.ExportFlag==0) and (rvrsvt==kVATTypeReversed and HasLocalization("FIN,LTU,LVA,PRT")) then begin
+  if (VIp.ExportFlag==0)/* and (rvrsvt==kVATTypeReversed and HasLocalization("FIN,LTU,LVA,PRT"))*/ then begin
     if (totrvrsvat!=0) then begin
       switch (VIp.InvType) begin
         case kInvoiceTypeEmployee: 
