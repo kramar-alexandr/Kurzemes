@@ -341,7 +341,20 @@ begin
     */
     rs = VIrw.VATVal;
     bookrs = MulRateToBase1(VIp.CurncyCode,VIrw.VATVal,frrate,torate1,torate2,baserate1,baserate2,DefaultCurRoundOff);
+   // Edit Start ---------------------------------------------- Edit Start
+	//Friday, 26 October 2018 18:51:30
+	
+   	GetVATRow(VIrw.VATCode,VATCbrw);
+		TaxRr.Code = VATCbrw.TaxRules;
+		ReadFirstMain(TaxRr,1,true);
+		if (TaxRr.VATType==kVATTypeReversed) then begin
+			VIGetVATCodeAccNumbers(VIrw.VATCode,APAccb,VIp.VECode,VIp.InvType,vatacc,pvatacc);
+			goto lBPIFastFoto;
+		end;
    
+   
+	// Edit End ---------------------------------------------- Edit End
+	
     if ((OPBookVAT==0) and (APAccb.PreOPBookVAT!=0)) or
        ((OPBookVAT!=0) and (APAccb.PreOPBookVAT!=0)) then begin
        if (APAccb.PrepExclVAT!=0 and APAccb.PreOPBookVAT!=kPreOPBookVATTypeNotVAT) then begin
@@ -371,6 +384,7 @@ begin
         if (TaxRr.VATType==kVATTypeReversed) then begin
           VIGetVATCodeAccNumbers(VIrw.VATCode,APAccb,VIp.VECode,VIp.InvType,vatacc,pvatacc);
         end;
+lBPIFastFoto:;// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 26 October 2018 18:51:10
         AddEuroCurncyTrRow(gTRp,vatacc,vatobjstr,AddVATCodeToVATAccRows(VIrw.VATCode),tstr,bookrs,false,dc2,totsum,VIp.CurncyCode,
                            pfr,pto1,pto2,pbr1,pbr2,rs,blankval,-1,VIp.InvType==kInvoiceTypeCredit or VIp.InvType==kInvoiceTypeCreditSpecialSales,"");
         if (TaxRr.VATType==kVATTypeReversed) then begin

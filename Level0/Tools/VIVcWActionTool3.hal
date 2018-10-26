@@ -207,19 +207,19 @@ begin
     switch (VIrw.stp) begin
       case kInvoiceRowTypeDownpayment:
         if (nonblank(VIrw.VATCode)) then begin
-          if (vt!=kVATTypeReversed/* or HasLocalization("FIN,LTU,LVA,PRT")*/==false) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 24 October 2018 13:17:17
+          if (vt!=kVATTypeReversed or HasLocalization("FIN,LTU,LVA,PRT")==false) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 24 October 2018 13:17:17
             AddVATBase(VATr,VIrw.VATCode,VIrw.Sum,blankval,vcrwcnt,0,VIp.NoTAXonVAT); 
           end;
         end;
       case kInvoiceRowTypeNormal:
         if (nonblank(VIrw.VATCode)) then begin
-          if (vt!=kVATTypeReversed/* or HasLocalization("FIN,LTU,LVA,PRT")*/==false) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 24 October 2018 13:17:22
+          if (vt!=kVATTypeReversed or HasLocalization("FIN,LTU,LVA,PRT")==false) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 24 October 2018 13:17:22
             AddVATBase(VATr,VIrw.VATCode,VIrw.Sum,blankval,vcrwcnt,0,VIp.NoTAXonVAT); 
           end;
         end;
       case kInvoiceRowTypeRetention:
         if (nonblank(VIrw.VATCode)) then begin
-          if (vt!=kVATTypeReversed/* or HasLocalization("FIN,LTU,LVA,PRT")*/==false) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 24 October 2018 13:17:27
+          if (vt!=kVATTypeReversed or HasLocalization("FIN,LTU,LVA,PRT")==false) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 24 October 2018 13:17:27
             AddVATBase(VATr,VIrw.VATCode,VIrw.Sum,blankval,vcrwcnt,0,VIp.NoTAXonVAT); 
           end;
         end;
