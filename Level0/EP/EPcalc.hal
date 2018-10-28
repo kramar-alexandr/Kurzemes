@@ -1,0 +1,2204 @@
+external function Integer DateIsRedDay(Integer,Date);
+external function val EPGetAccVacCalc(record EPContractVc,date);
+external procedure getvarval(string,record SMVc,var string);
+external function val GetAvSalDays(record EPCalcResVc,integer);
+external procedure AddEPCalcDays(record EPCalcResVc,record SMVc,record SMVc, record EPPayrollSetBlock);
+external procedure GetCurFakeRec(record EPCalcResVc,var record EPCalcresVc,record SMVc,record EPPayrollSetBlock,record EPContractVc,var val);
+
+external procedure AddConstData(var record EPCalcResVc,var record SMVc,var record SMVc);
+external procedure AddHourlyRate(var record EPCalcResVc,var record SMVc,var record SMVc);
+external function LongInt DateDiff(Date,Date);
+external procedure addvarval(string,var record SMVc,string);
+external procedure addvarvalRep(string,var record SMVc,string);
+
+external Function val FCALCWITHVARPay(string,var record SMVc,string);
+external procedure GetPeriodDayCount(var integer,date,integer,date,date,date,integer,var longint,var integer,string,record EPOffWorkGroupVc, record EPOffTrTypeVc);
+external procedure GetEmpTaxGroup(string,date,var string);
+external procedure AccumulatePrevTrTypes(var record EPCalcResVc,record EPContractVc);
+external procedure GetTSRec(var record EPCalcResVc,var array string ,var array val,var array string,array integer,var integer);
+external procedure UpdateAvMonth(var record EPCalcResVc);
+external procedure UpdateUserFields(var record EPCalcResVc);
+external procedure addvarvalAdd(string,var record SMVc,string);
+external function val GetEPAvSalary3(record EPCalcResVc,string,date,string,date,val,val,boolean,val,boolean,var Boolean,var val,var array val,var array string,Boolean,var Boolean);
+external procedure FindCalcResAvSal(string,record EPCalcresVc,var string,var string,val);
+external procedure CalcResSetAv(row TaxRepVc,record SMVc,record EPCalcresVc,var string,var string,val,var val);
+external procedure EPCalcBonussAmount(var record EPCalcResVc,record EPEntrySetBlock,row EPEntryVc);
+external procedure calculatePrivilegies(record EPCalcResVc,var array string,var array val,var array integer,var integer);
+external Procedure FillCalcDayFields(var record EPCalcResVc);
+external function roundmode SetRoundModeD(Integer);
+external function val GetContractWorkedHours(record EPContractVc,date,date);
+external function val GetContractWorkedHours2(record EPContractVc,date,date,Boolean,var array val);
+external procedure EPFindSplitSalary(record EPContractVc,record EPCalcResVc,var string,Boolean,string);
+external function Time TimeDiff(Time,Time);
+external function LongInt TimeDiffInSeconds(Time,Time);
+external procedure GetDatePeriod(string,date,var date,var date,var boolean);
+external procedure AddNonTaxableData(record EPCalcResVc,var array string,var array val,var array integer,var Integer);
+
+
+
+global
+function val EPGetOperationTypeTurnover(string contractnr,string trtype,Date td)
+begin
+  val res;
+  record EPCalcResVc EPCalcResr;
+  row EPCalcResVc EPCalcResrw;
+  Integer i,rwcnt;
+  Boolean TrHs;
+  Date sd;
+  
+  TrHs = true;
+  sd = td;
+  sd.Day = 1;
+  sd.Month = 1;
+  EPCalcResr.StartDate = sd;
+  while (LoopKey("ContractStartDate:" & contractnr,EPCalcResr,1,TrHs)) begin
+    if (EPCalcResr.StartDate>=td) then begin
+      TrHs = false;
+    end else begin
+      rwcnt = MatRowCnt(EPCalcResr);
+      for (i=0;i<rwcnt;i=i+1) begin
+        MatRowGet(EPCalcResr,i,EPCalcResrw);
+        if (EPCalcResrw.TrType==trtype) then begin
+          res = res + EPCalcResrw.Sum;
+        end;
+      end;
+    end;
+  end;
+
+  EPGetOperationTypeTurnover = res;
+  return;
+end;
+
+function val FCALCWITHVARPayCheckSum(string formula,var record SMVc vararray,string fcode,record EPCalcResVc tEPCalcResr)
+begin
+  record EPCalcResVc EPCalcresr;
+  record EPTrTypeVc EPTrTyper;
+  row EPTrTypeVc EPTrTyperw;
+  row EPCalcResVc EPCalcResrw;
+  string 20 cmptrtype;
+  integer rwc,rw,i,rwcnt;
+  boolean Trhs;
+  val res,adjval,negadjval;
+  
+  res = FCALCWITHVARPay(Formula,vararray,FCode);
+  EPTrTyper.Code = FCode;
+  if (ReadFirstMain(EPTrTyper,1,true)) then begin
+    rwc =  MatRowCnt(EPTrTyper);
+    if (rwc > 0) then begin
+      for (rw = 0; rw< rwc; rw = rw+1) begin
+        MatRowGet(EPTrTyper,rw,EPTrTyperw);
+        if (dateinrange(tEPCalcResr.StartDate,EPTrTyperw.StartDate,EPTrTyperw.EndDate)) then begin
+          cmptrtype = EPTrTyper.Code;
+          if (nonblank(EPtrTyperw.MinTrType)) then begin
+            cmptrtype = EPTrTyperw.MinTrType;
+          end;
+          EPCalcResr.StartDate = EPTrTyperw.StartDate;
+          adjval = EPTrTyperw.MaxAmount;
+          negadjval = EPTrTyperw.MinAmount;
+          TrHs = true;
+          while (LoopKey("ContractStartDate:" & tEPCalcResr.ContractNr,EPCalcResr,1,TrHs)) begin
+            if (EPCalcResr.StartDate > EPtrTyperw.EndDate) then begin
+              TrHs = false;
+            end else begin
+              if (EPCalcResr.SerNr <> tEPCalcResr.SerNr) then begin
+                rwcnt = MatRowCnt(EPCalcResr);
+                for (i = 0; i < rwcnt; i = i +1) begin  
+                  MatRowGet(EPCalcResr,i,EPCalcResrw);
+                  if (EPCalcResrw.TrType==cmptrtype) then begin
+                    adjval = adjval - EPCalcResrw.Sum;
+                    negadjval = negadjval - EPCalcResrw.Sum;
+                  end;
+                end;
+              end;
+            end;
+          end;
+          if (EPTrTyperw.MinAmount>0) then begin
+            if (negadjval > 0 and negadjval < res) then begin
+              res = res - negadjval;
+            end else begin
+              if (negadjval > 0) then begin
+                res = 0;
+              end;
+            end;
+          end;
+          if (EPTrTyperw.MaxAmount>0) then begin
+            if (adjval < 0) then begin
+              res = 0;
+            end else begin
+              if (adjval < res) then begin
+                res = adjval;
+              end;
+            end;
+          end;
+        end;
+      end;
+      addvarvalrep(FCode,vararray,valtostring(res,M423Val,"",".",0));
+    end;
+  end;
+FCALCWITHVARPayCheckSum = res;
+return;
+end;
+
+
+function boolean CheckCalcResObj(record EPCalcResVc EPCalcResr,integer rownr)
+begin
+  record EPTrTypeVc EPTrTyper;
+  row EPCalcResVc EPCalcResrw;
+  string 50 trcode;
+  integer rw,rwc;
+  integer i;
+  boolean res;
+
+  MatRowGet(EPCalcResr,rownr,EPCalcResrw);
+  trcode = EPCalcResrw.TrType;
+  rwc = MatRowCnt(EPCalcResr);
+  EPTrTyper.Code = trcode;
+  res = true;
+  if (ReadFirstMain(EPTrTyper,1,true)) then begin
+    if (EPTrTyper.CalcType==1) then begin
+      res = false;
+    end;
+  end;
+  CheckCalcResObj = res;
+return;
+end;
+
+global
+function Boolean IsEPHolliday(Date tdp,record BHollVc BHp,record TimeClassVc Timeclr,Boolean ignoreweekdays,boolean ignorefree)
+begin
+  record EPWorkDayChVc EPWrkChr;
+  row BHollVc BHrw;
+  Integer i,rwcnt;
+  Boolean res;
+  res = false;
+  i = GetDateId(tdp);
+  res = false;
+  if (ignoreweekdays==false) then begin
+    switch(i) begin
+      case 1:
+        if (TimeClr.Monday==0) then begin res = true; end;
+      case 2:
+        if (TimeClr.Tuesday==0) then begin res = true; end;
+      case 3:
+        if (TimeClr.Wednesday==0) then begin res = true; end;
+      case 4:
+        if (TimeClr.Thursday==0) then begin res = true; end;
+      case 5:
+        if (TimeClr.Friday==0) then begin res = true; end;
+      case 6:
+        if (TimeClr.Saturday==0) then begin res = true; end;
+      case 7:
+        if (TimeClr.Sunday==0) then begin res = true; end;
+    end;
+  end;
+  if (res==false and ignorefree==false) then begin
+    rwcnt = MatRowCnt(BHp);
+    for (i=0;i<rwcnt;i=i+1) begin
+      MatRowGet(BHp,i,BHrw);
+      if (tdp==BHrw.FreeDay) then begin
+        res = true;
+        i = rwcnt;
+      end;
+    end;
+  end;
+  if (res==true) then begin
+    EPWrkChr.WorkDate = tdp;
+    if (ReadFirstKey("WorkDate",EPWrkChr,1,true)) then begin
+      res = false;
+    end;
+  end;
+  IsEPHolliday = res;
+  return;
+end;
+
+function Boolean GetHourCountFromTSPlan(string contractnr,Date tdp,var val addedhours)
+begin
+  record EPTSPlanVc EPTSPlanr;
+  row EPTSPlanVc EPTSPlanrw;
+  val tmpval;
+  Boolean TrHs,res,testf;
+  Integer i,rwcnt;
+  Date td;
+ 
+  td = tdp;
+  td.Day = 1;
+  EPTSPlanr.StartDate = td;
+  TrHs = true;
+  while LoopKey("ContractNr:" & contractnr,EPTSPlanr,1,TrHs) begin
+    if (EPTSPlanr.StartDate>tdp) then begin
+      TrHs = false;
+    end else begin
+      testf = true;
+      if (EPTSPlanr.OKFlag==0) then begin
+        testf = false;
+      end;
+      if (testf) then begin
+        rwcnt = MatRowCnt(EPTSPlanr);
+        for (i=0;i<rwcnt;i=i+1) begin
+          MatRowGet(EPTSPlanr,i,EPTSPlanrw);
+          if (EPTSPlanrw.ContractNr==contractnr) then begin
+            res = true;
+            tmpval = StringToVal(GetFieldValueByName(EPTSPlanr,"Day" & GetDay(tdp),i),M4Val);
+            addedhours = addedhours + tmpval;
+          end;
+        end;
+      end;
+    end;
+  end;
+
+  GetHourCountFromTSPlan = res;
+  return;
+end;
+
+function Boolean EPShouldWorkFromPlan(string contractnr,Date tdp,record BHollVc BHp,record TimeClassVc Timeclr,Boolean ignoreweekdays,boolean ignorefree,var val addedhours)
+begin
+  Boolean res;
+  
+  addedhours = 0;
+  res = GetHourCountFromTSPlan(contractnr,tdp,addedhours);
+  if (!res) then begin
+    res = IsEPHolliday(tdp,BHp,Timeclr,ignoreweekdays,ignorefree);
+    if (!res) then begin
+      res = true;
+      addedhours = TimeDiffInSeconds(Timeclr.StartTime,Timeclr.EndTime)/60/60;
+    end;
+  end;
+
+  EPShouldWorkFromPlan = res;
+  return;
+end;
+
+global
+function val amountofworkdays(date startdate,date enddate,boolean ignoreoffwork,string timecl)
+begin
+  record BHollVc BHr;
+  record TimeClassVc Timeclr;
+  record CYBlock CYbl;
+  integer daycount;
+  boolean testf;
+  date tempdate;
+  blockload(CYbl);
+  BHr.CountryCode = CYbl.CountryCode;
+  testf = ReadFirstMain(BHr,1,true);
+  Timeclr.Code = timecl;
+  testf = ReadFirstMain(Timeclr,1,true);
+  daycount = 0;
+  tempdate = startdate;
+  while (tempdate <= enddate) begin
+    if (IsEPHolliday(tempdate,BHr,Timeclr,false,false)==false) then begin
+      daycount = daycount + 1;
+    end;
+    tempdate = addday(tempdate,1);
+  end;
+  amountofworkdays = daycount;
+return;
+end;
+
+global
+function val amountofworkhours(string contractnr,date startdate,date enddate,boolean ignoreoffwork,string timecl,Boolean checkplanf)
+begin
+  record BHollVc BHr;
+  record TimeClassVc Timeclr;
+  record CYBlock CYbl;
+  integer hourcount;
+  boolean testf,res;
+  date tempdate;
+  val addedhours;
+  blockload(CYbl);
+  
+  BHr.CountryCode = CYbl.CountryCode;
+  testf = ReadFirstMain(BHr,1,true);
+  Timeclr.Code = timecl;
+  ReadFirstMain(Timeclr,1,true);
+  hourcount = 0;
+  tempdate = startdate;
+  while (tempdate <= enddate) begin
+    res = false;
+    if (checkplanf) then begin
+      res = GetHourCountFromTSPlan(contractnr,tempdate,addedhours);
+    end;
+    if (!res) then begin
+      res = IsEPHolliday(tempdate,BHr,Timeclr,false,false);
+      if (!res) then begin
+        hourcount = hourcount + TimeDiffInSeconds(Timeclr.StartTime,Timeclr.EndTime)/60/60;
+      end;
+    end else begin
+      hourcount = hourcount + addedhours;
+    end;
+    tempdate = addday(tempdate,1);
+  end;
+  amountofworkhours = hourcount;
+return;
+end;
+
+global
+function val amountofHolidays(date startdate,date enddate,boolean ignoreoffwork,string timecl)
+begin
+  record BHollVc BHr;
+  record TimeClassVc Timeclr;
+  record CYBlock CYbl;
+  integer daycount;
+  boolean testf;
+  date tempdate;
+  blockload(CYbl);
+  BHr.CountryCode = CYbl.CountryCode;
+  testf = ReadFirstMain(BHr,1,true);
+  Timeclr.Code = timecl;
+  testf = ReadFirstMain(Timeclr,1,true);
+  daycount = 0;
+  tempdate = startdate;
+  while (tempdate <= enddate) begin
+    if (IsEPHolliday(tempdate,BHr,Timeclr,false,false)) then begin
+      daycount = daycount + 1;
+    end;
+    tempdate = addday(tempdate,1);
+  end;
+  AmountOfHolidays = daycount;
+return;
+end;
+
+global
+function date GetPlanEndDate(date sd,string timecl,val days,integer type)
+begin
+  record BHollVc BHr;
+  record TimeClassVc Timeclr;
+  record CYBlock CYbl;
+  integer daycount;
+  boolean testf,ignorefree,checkf;
+  date tempdate;
+  date res;
+  
+  blockload(CYbl);
+  BHr.CountryCode = CYbl.CountryCode;
+  testf = ReadFirstMain(BHr,1,true);
+  Timeclr.Code = timecl;
+  testf = ReadFirstMain(Timeclr,1,true);
+  daycount = 0;
+  tempdate = sd;
+  
+  ignorefree = false;
+  checkf = false;
+  if (type==2) then begin
+    ignorefree = true;
+  end;
+  if (type==1) then begin
+    checkf = true;
+  end;
+  while (daycount <= days) begin
+    if (IsEPHolliday(tempdate,BHr,Timeclr,ignorefree,checkf)==false) then begin
+      daycount = daycount + 1;
+    end;
+    tempdate = addday(tempdate,1);
+  end;
+  res = tempdate;
+GetPlanEndDate = res;
+return;
+end;
+
+
+
+global
+function val AmountOfRedDays(date startdate,date enddate,boolean ignoreoffwork,string timecl)
+begin
+  record BHollVc BHr;
+  record TimeClassVc Timeclr;
+  record CYBlock CYbl;
+  integer daycount;
+  boolean testf;
+  date tempdate;
+  blockload(CYbl);
+  BHr.CountryCode = CYbl.CountryCode;
+  testf = ReadFirstMain(BHr,1,true);
+  Timeclr.Code = timecl;
+  testf = ReadFirstMain(Timeclr,1,true);
+  daycount = 0;
+  tempdate = startdate;
+  while (tempdate <= enddate) begin
+    if (IsEPHolliday(tempdate,BHr,Timeclr,true,false)) then begin
+      daycount = daycount + 1;
+    end;
+    tempdate = addday(tempdate,1);
+  end;
+  AmountOfRedDays = daycount;
+  return;
+end;
+
+//Not used anymore. made an easier function.
+global
+function string 255 GetEPContractData(record EPContractVc EPContractr,date td,string fieldcode)
+begin  
+  record EPContrChangeVc EPContrChanger;
+  record EPPayrollSetBlock EPPaybl;
+  string 255 res;
+  boolean TrHs,testf;
+  
+  BlockLoad(EPPaybl);
+  switch fieldcode begin
+    case "TimeClass":
+      if (EPContractr.TimeClass <> "") then begin
+        res = EPContractr.TimeClass;
+      end else begin
+        res = EPPaybl.DefTimeClass;
+      end;
+      TrHs = true;
+      EPContrChanger.StartDate = td;
+      while (LoopBackKey("StartDate:" & EPContractr.ContractNr,EPContrChanger,1,TrHs)) begin
+        if (EPContractr.StartDate > td) then begin
+          TrHs = false;
+        end else begin
+          testf = true;
+          if (nonblank(EPContrChanger.EndDate) and EPContrChanger.EndDate<td) then begin
+            testf = false;
+          end;
+          if (EPContrChanger.TimeClass == "") then begin
+            testf = false;
+          end;
+          if (testf) then begin
+            res = EPContrChanger.TimeClass;
+            Trhs = false;
+          end;
+        end;
+      end;
+    case "Calc":
+      if (nonblank(EPContractr.Calc)) then begin
+        res = EPContractr.Calc;
+      end else begin
+        res = EPPaybl.Calc; 
+      end;
+      TrHs = true;
+      EPContrChanger.StartDate = td;
+      while (LoopBackKey("StartDate:" & EPContractr.ContractNr,EPContrChanger,1,TrHs)) begin
+        if (EPContractr.StartDate > td) then begin
+          TrHs = false;
+        end else begin
+          testf = true;
+          if (nonblank(EPContrChanger.EndDate) and EPContrChanger.EndDate<td) then begin
+            testf = false;
+          end;
+          if (EPContrChanger.Calc == "") then begin
+            testf = false;
+          end;
+          if (testf) then begin
+            res = EPContrChanger.Calc;
+            TrHs = false;
+          end;
+        end;
+      end;
+    case "PayDeal":
+      if (nonblank(EPContractr.PayDeal)) then begin
+        res = EPContractr.PayDeal;
+      end else begin
+        res = EPPaybl.PayDeal; 
+      end;
+      TrHs = true;
+      EPContrChanger.StartDate = td;
+      while (LoopBackKey("StartDate:" & EPContractr.ContractNr,EPContrChanger,1,TrHs)) begin
+        if (EPContractr.StartDate > td) then begin
+          TrHs = false;
+        end else begin
+          testf = true;
+          if (nonblank(EPContrChanger.EndDate) and EPContrChanger.EndDate<td) then begin
+            testf = false;
+          end;
+          if (EPContrChanger.PayDeal == "") then begin
+            testf = false;
+          end;
+          if (testf) then begin
+            res = EPContrChanger.PayDeal;
+            TrHs = false;
+          end;
+        end;
+      end; 
+    case "PostCode":
+      if (nonblank(EPContractr.PostCode)) then begin
+        res = EPContractr.PostCode;
+      end;
+      TrHs = true;
+      EPContrChanger.StartDate = td;
+      while LoopBackKey("StartDate:" & EPContractr.ContractNr,EPContrChanger,1,TrHs) begin
+        if EPContractr.StartDate > td then begin
+          TrHs = false;
+        end else begin
+          testf = true;
+          if nonblank(EPContrChanger.EndDate) and EPContrChanger.EndDate<td then begin
+            testf = false;
+          end;
+          if EPContrChanger.PostCode == "" then begin
+            testf = false;
+          end;
+          if testf then begin
+            res = EPContrChanger.PostCode;
+            TrHs = false;
+          end;
+        end;
+      end;  
+    end;
+  GetEPContractData = res;
+  return;
+end;
+
+function string 255 DefaultEPContractField(record EPContractVc EPContractr,string fieldname)
+begin
+  string 255 res;
+  record EPPayrollSetBlock EPPaybl;
+
+  switch (fieldname) begin
+    case "TimeClass": res = EPContractr.TimeClass;
+    case "PostCode":  res = EPContractr.PostCode;
+    case "DepCode":   res = EPContractr.DepCode;
+    case "TSTaxCode": res = EPContractr.TSTaxCode;
+    case "Objects":   res = EPContractr.Objects;
+    case "PayDeal":   res = EPContractr.PayDeal;
+    case "Calc":      res = EPContractr.Calc;
+    case "AddTSTax1": res = EPContractr.AddTSTax1;
+    case "AddTSTax2": res = EPContractr.AddTSTax2;
+    case "AddTSTax3": res = EPContractr.AddTSTax3;
+    case "AddTSTimeTrType1": res = EPContractr.AddTSTimeTrType1;
+    case "AddTSTimeTrType1": res = EPContractr.AddTSTimeTrType1;
+    case "AddTSTimeTrType1": res = EPContractr.AddTSTimeTrType1;
+    case "AddTSTimeClass1": res = EPContractr.AddTSTimeClass1;
+    case "AddTSTimeClass1": res = EPContractr.AddTSTimeClass1;
+    case "AddTSTimeClass1": res = EPContractr.AddTSTimeClass1;
+    case "AddTSTrType1": res = EPContractr.AddTSTrType1;
+    case "AddTSTrType2": res = EPContractr.AddTSTrType2;
+    case "AddTSTrType3": res = EPContractr.AddTSTrType3;
+    case "TSTimeTrType": res = EPContractr.TSTimeTrType;
+    case "TSSumTrType": res = EPContractr.TSSumTrType;
+  end;
+  
+  if (blank(res)) then begin
+    BlockLoad(EPPaybl);
+    switch (fieldname) begin
+      case "TimeClass": res = EPPaybl.DefTimeClass;
+      case "TSTaxCode": res = EPPaybl.TSTaxCode;
+      case "PayDeal":   res = EPPaybl.PayDeal;
+      case "Calc":      res = EPPaybl.Calc;
+      case "AddTSTax1": res = EPPaybl.AddTSTax1;
+      case "AddTSTax2": res = EPPaybl.AddTSTax2;
+      case "AddTSTax3": res = EPPaybl.AddTSTax3;
+      case "AddTSTimeTrType1": res = EPPaybl.AddTSTimeTrType1;
+      case "AddTSTimeTrType1": res = EPPaybl.AddTSTimeTrType1;
+      case "AddTSTimeTrType1": res = EPPaybl.AddTSTimeTrType1;
+      case "AddTSTimeClass1": res = EPPaybl.AddTSTimeClass1;
+      case "AddTSTimeClass1": res = EPPaybl.AddTSTimeClass1;
+      case "AddTSTimeClass1": res = EPPaybl.AddTSTimeClass1;
+      case "AddTSTrType1": res = EPPaybl.AddTSTrType1;
+      case "AddTSTrType2": res = EPPaybl.AddTSTrType2;
+      case "AddTSTrType3": res = EPPaybl.AddTSTrType3;
+      case "TSTimeTrType": res = EPPaybl.TSTimeTrType;
+      case "TSSumTrType": res = EPPaybl.TSSumTrType;
+    end;
+  end;
+  
+  DefaultEPContractField = res;
+  return;
+end;
+
+global
+function string 255 EPContractFieldOnDate2(record EPContractVc EPContractr,date td,string fieldname)
+begin
+  record EPContrChangeVc EPContrChanger;
+  string 255 res,ChangedValue;
+  boolean TrHs,testf;
+
+  res = DefaultEPContractField(EPContractr,fieldname);
+  TrHs = true;
+  EPContrChanger.StartDate = td;
+  while (LoopBackKey("StartDate:" & EPContractr.ContractNr,EPContrChanger,1,TrHs)) begin
+    if (EPContrChanger.StartDate>td) then begin
+      TrHs = false;
+    end else begin
+      testf = true;
+      if (nonblank(EPContrChanger.EndDate) and EPContrChanger.EndDate<td) then begin
+        testf = false;
+      end;
+      if (EPContrChanger.Status==0) then begin //possible to check for approved changes
+        testf = false;
+      end;
+      switch (fieldname) begin
+        case "PostCode":  ChangedValue = EPContrChanger.PostCode;
+        case "DepCode":   ChangedValue = EPContrChanger.DepCode;
+        case "TSTaxCode": ChangedValue = EPContrChanger.TSTaxCode;
+        case "TimeClass": ChangedValue = EPContrChanger.TimeClass;
+        case "Objects":   ChangedValue = EPContrChanger.Objects;
+        case "PayDeal":   ChangedValue = EPContrChanger.PayDeal;
+        case "Calc":      ChangedValue = EPContrChanger.Calc;
+        case "AddTSTax1": ChangedValue = EPContrChanger.AddTSTax1;
+        case "AddTSTax2": ChangedValue = EPContrChanger.AddTSTax2;
+        case "AddTSTax3": ChangedValue = EPContrChanger.AddTSTax3;
+        case "AddTSTimeTrType1": ChangedValue = EPContrChanger.AddTSTimeTrType1;
+        case "AddTSTimeTrType2": ChangedValue = EPContrChanger.AddTSTimeTrType2;
+        case "AddTSTimeTrType3": ChangedValue = EPContrChanger.AddTSTimeTrType3;
+        case "AddTSTimeClass1": ChangedValue = EPContrChanger.AddTSTimeClass1;
+        case "AddTSTimeClass2": ChangedValue = EPContrChanger.AddTSTimeClass2;
+        case "AddTSTimeClass3": ChangedValue = EPContrChanger.AddTSTimeClass3;
+        case "AddTSTrType1": ChangedValue = EPContrChanger.AddTSTrType1;
+        case "AddTSTrType2": ChangedValue = EPContrChanger.AddTSTrType2;
+        case "AddTSTrType3": ChangedValue = EPContrChanger.AddTSTrType3;
+        case "TSTimeTrType": ChangedValue = EPContrChanger.TSTimeTrType;
+        case "TSSumTrType": ChangedValue = EPContrChanger.TSSumTrType;
+      end;
+      if (blank(ChangedValue)) then begin
+        testf = false;
+      end;
+      if (testf) then begin
+        res = ChangedValue;
+        TrHs = false;
+      end;
+    end;
+  end;
+  EPContractFieldOnDate2 = res;
+  return;
+end;
+
+global
+function string 255 EPContractFieldOnDate(string ContractNr,date td,string fieldname)
+begin
+  record EPContractVc EPContractr;
+  string 255 res;
+
+  EPContractr.ContractNr = ContractNr;
+  if (ReadFirstMain(EPContractr,1,true)) then begin
+    res = EPContractFieldOnDate2(EPContractr,td,fieldname);
+  end;
+  EPContractFieldOnDate = res;
+  return;
+end;
+
+procedure GetCurrentMonthAvSal(var record SMVc vararray,var record TaxRepVc TaxRepr,var record EPContractVc EPContractr,var record EPCalcResVc EPCalcResr,var val dayamount)
+begin
+  record EPPayrollSetBlock EPPaybl;
+  record EPTrTypeVc EPTrTyper;
+  row EPCalcResVc EPCalcResrw;
+  row TaxRepVc TaxReprw;
+  row EPContractVc EPContractrw;
+  integer k,ar,j,i,ark,rwc,rw;
+  string 255 tstr;
+  string 20 timecl;
+  val tempa,daycount;
+  
+  
+  blockload(EPPaybl);
+  timecl = EPContractFieldOnDate2(EPContractr,EPCalcResr.StartDate,"TimeClass");
+  ar=MatRowCnt(TaxRepr);
+  i = MatRowCnt(EPCalcResr);
+  for (j=0;j<ar;j=j+1) begin
+    MatRowGet(TaxRepr,j,TaxReprw);
+    tempa=FCALCWITHVARPay(TaxReprw.Formula,vararray,TaxReprw.FCode);
+    ark = MatRowCnt(EPContractr);
+    for (k=0;k<ark;k=k+1) begin
+      MatRowGet(EPContractr,k,EPContractrw);
+      if (EPContractrw.Type==0) and (EPContractrw.TrType==TaxReprw.FCode) then begin
+        EPCalcResrw.TrType=TaxReprw.FCode;
+        EPCalcResrw.Comment=EPContractrw.Text;
+        EPTrTyper.Code = EPCalcResrw.TrType;
+        EPCalcResrw.Objects = "";
+        if (ReadFirstMain(EPtrTyper,1,true)) then begin
+          EPCalcResrw.Sum = StringToVal(tempa,M423Val);
+        end;
+        MatRowPut(EPCalcResr,i,EPCalcResrw);
+        i=i+1;
+        k=ark;
+      end;
+    end;
+  end;
+  UpdateAvMonth(EPCalcresr);
+  daycount =  amountofworkdays(EPCalcResr.StartDate,EPCalcResr.EndDate,false,timecl);
+  dayamount = EPCalcResr.MonthSal / daycount;
+return;
+end;
+
+procedure addvaltoarray(val sum,string trcode,longint docnr,string object,var array val amounts,var array string trcodes,var array string docnrs,var array string objects,var integer size)
+begin
+  string 20 tdocnr;
+  integer i;
+  
+  tdocnr = docnr;
+  for (i = 0; i < size;i = i + 1) begin
+    if (trcode == trcodes[i] and tdocnr==docnrs[i] and objects[i]==object) then begin
+      amounts[i] = amounts[i] + sum;
+      goto EXITINSERT;
+    end;
+  end;
+  Trcodes[size] = trcode;
+  amounts[size] = sum;
+  docnrs[size] = docnr;
+  objects[size] = object;
+  size = size + 1;
+EXITINSERT:;
+return;
+end;
+
+procedure getperiodamount(var val sum,var integer curday,date datefrom,integer daysbefore,date offenddate,date payenddate,integer dayscount,val salary,val perc,boolean ignorefree,boolean ignoreweekdays,string timecl,integer offtype,record EPOffWorkVc EPOffWorkr,boolean repf,boolean includef,boolean hourf,var boolean includehf,string obj)
+begin
+  row EPOffWorkVc EPOffWorkrw;
+  record BHollVc BHr;
+  record TimeClassVc TimeClr;
+  record CYBlock CYbl;
+  date tempdate,ed,tempstartdate;
+  integer i,rw,rwc,j;
+  val compqty;
+  boolean testf,foundf;
+  val addedhours;
+
+  blockload(CYbl);
+  i = 0;
+  j = 0;
+  BHr.CountryCode = CYbl.CountryCode;
+  testf = ReadFirstMain(BHr,1,true);
+  TimeClr.Code = timecl;
+  testf = ReadFirstMain(Timeclr,1,true);
+  tempdate = addday(datefrom,curday);
+  tempstartdate = tempdate;
+  compqty = 0;
+  ed = payenddate;
+  /* getting end date of compensation calculation */
+  if (offtype == 0) then begin
+    ed = offenddate;
+  end else begin
+    if (offenddate < payenddate) then begin
+      ed = offenddate;
+    end;
+  end;
+  if (ed > addday(tempdate,dayscount)) then begin ed = addday(tempdate,dayscount); end;
+  foundf = false;
+  rwc = MatRowCnt(EPOffWorkr);
+  for (rw = 0; rw < rwc; rw = rw+1) begin
+    MatRowGet(EPoffWorkr,rw,EPOffWorkrw);
+    if (dateinrange(EPOffWorkrw.StartDate,tempdate,ed) and dateinrange(EPOffWorkrw.EndDate,tempdate,ed)) then begin
+      if (nonblank(EPOffWorkrw.Qty)) then begin
+        compqty = compqty + EPOffWorkrw.Qty;
+        foundf = true;
+      end;
+    end;
+  end;
+//  wholeoffwrkf - if true - amount should be calculated for the whole off work period even if it streches outside the current month
+  if (foundf) then begin
+    sum = sum + compqty * (salary * perc / 100);
+    curday = curday + dayscount;
+  end;
+  while ((tempdate <= ed) and i <= dayscount) begin
+    if (not foundf) then begin
+      if (hourf) then begin
+        if ((EPShouldWorkFromPlan(EPOffWorkr.ContractNr,tempdate,BHr,Timeclr,ignoreweekdays,ignorefree,addedhours) and testf) or testf==false) then begin
+          sum = sum + ((salary*addedhours) * perc / 100);
+          j = j + addedhours;
+        end;        
+      end else begin
+        if ((IsEPHolliday(tempdate,BHr,Timeclr,ignoreweekdays,ignorefree)==false and testf) or testf==false) then begin
+          sum = sum + (salary * perc / 100);
+          j = j + 1;
+        end;
+      end;
+    end;
+    i = i + 1;
+    curday = curday + 1;
+    tempdate = addday(datefrom,curday);
+  end;
+  sum = round(sum,SetRoundModeD(2));
+  if (repf and includef) then begin
+    if (includehf==false) then begin
+      includehf = true;
+      StartFormat(15);
+      OutString(30,0,USetStr(1525132),false);
+      OutString(150,0,UsetStr(1525133),false);
+      OutString(210,0,UsetStr(1525134),false);
+      if (hourf) then begin
+        OutString(280,0,UsetStr(1500005),true);      
+      end else begin
+        OutString(280,0,UsetStr(1525135),true);
+      end;
+      OutString(310,0,UsetStr(1525136),true);
+      OutString(350,0,UsetStr(1525137),true);
+      EndFormat;
+      Gray_Divider(0,130);
+    end;
+    StartFormat(15);
+    OutString(150,0,tempstartdate,false);
+    OutString(210,0,ed,false);
+    Outstring(280,0,j,true);
+    OutString(310,0,perc,true);
+    OutString(350,0,sum,true);
+    EndFormat;
+  end;
+
+  return;
+end;
+
+function longint DaysToFirstWorkDay(date testd)
+begin
+  longint res;
+  date td;
+  boolean testf;
+  integer i;
+  
+  td = testd;
+  i = 0;
+  testf = true;
+  while (DateIsRedDay(CalendarSystem,td)<>0 and testf) begin
+    td = AddDay(td,-1);
+    i = i + 1;
+    if (i > 20) then begin
+      testf = false;
+    end;
+  end;
+
+  DaysToFirstWorkDay = res;
+return;
+end;
+
+global 
+procedure GetEmpOffWorkGroupData2(record EPCalcResVc EPCalcResr,record EPOffWorkVc EPOffWorkr,var longint offworkdays,var integer caldaycorr,val curmv,string timecl,var array string trtypes,var array val amounts,var array string docnrs,var integer size,boolean repf,var array  string offworkobjects)
+begin
+  record EPPayrollsetBlock EPPaybl;
+  record EPOFfWorkGroupVc EPOffGrr;
+  record EPOffTrTypeVc EPOfftrTyper;
+  row EPOFfWorkGroupVc EPoffGrrw;
+  row EPOffTrTypeVc EPOfftrTyperw;
+  row EPOffWorkVc EPOffWorkrw;
+  date offdatefrom;
+  val avsal,sum,tsum;
+  integer checkd;
+  boolean includehf,refreshf;
+  val ratio;
+
+  longint offwrk,daysbefore,daysafter;
+  integer rw,rwc,i,rwcnt,curday,curday2,j;
+  boolean foundf,testf,testf2,ignorefree,ignoreWeekDays,countf,addedf;
+  longint alreadyadded;
+  Boolean hourf;
+  val hours;
+  array val a_sal;
+  array string 255 a_obj;
+  
+  BlockLoad(EPPaybl);
+  includehf = false;
+  EPOffGrr.Code = EPOffWorkr.Group;
+  checkd = 0;
+  if (EPPaybl.StartPerFlag==1) then begin
+    checkd = 1;
+  end;
+  if (EPPaybl.StartPerFlag==2) then begin
+    checkd = DaysToFirstWorkDay(EPOffWorkr.StartDate);
+  end;
+  if (ReadFirstMain(EPOffGrr,1,true)) then begin
+    rwc = MatRowCnt(EPOffGrr); 
+    for (rw = 0; rw < rwc; rw = rw + 1) begin
+      MatRowGet(EPOffGrr,rw,EPoffGrrw);
+      EPOffTrTyper.Code = EPOffGrrw.OffTrTypeCode;
+      offworkdays = 0;
+      offwrk =0;
+      caldaycorr = 0;
+    
+      if (ReadFirstMain(EPOffTrtyper,1,true)) then begin
+        testf2 = false; 
+        foundf = false;
+        if (dateinrange(addday(EPOffWorkr.StartDate,-checkd),EPCalcResr.StartDate,EPCalcresr.EndDate)) then begin
+          if (EPOffTrtyper.PayType==0) then begin
+            foundf = true;
+            testf2 = true;
+          end;
+        end;   
+
+        if (Dateinrange(addday(EPOffWorkr.EndDate,1),EPCalcResr.StartDate,EPCalcresr.EndDate) and EPPaybl.EndPerFlag==1) or
+           (Dateinrange(EPOffWorkr.EndDate,EPCalcResr.StartDate,EPCalcresr.EndDate) and EPPaybl.EndPerFlag==0) then begin
+          if (EPOffTrtyper.PayType ==1) then begin
+            foundf = true;
+            testf2 = true;
+          end;
+        end;   
+        if (dateinrange(EPOffWorkr.StartDate,EPCalcResr.StartDate,EPCalcResr.EndDate) or 
+            dateinrange(EPOffWorkr.EndDate,EPCalcResr.StartDate,EPCalcResr.EndDate) or 
+            (EPOffworkr.StartDate <= EPCalcResr.StartDate and EPOffWorkr.EndDate >= EPCalcResr.EndDate)) then begin
+          if (EPOffTrtyper.PayType ==2) then begin
+            foundf = true;       
+            testf2 = true;
+          end;    
+        end;
+ 
+        if (testf2) then begin
+          if (EPOffWorkr.StartDate>EPCalcResr.EndDate) then begin
+            avsal = GetEPAvSalary3(EPCalcresr,EPCalcResr.EmpCode,EPOffWorkr.StartDate,EPCalcresr.ContractNr,EPCalcresr.StartDate,curmv,GetAvSalDays(EPCalcResr,0),true,GetAvSalDays(EPCalcResr,1),false,hourf,hours,a_sal,a_obj,true,refreshf);  
+          end else begin
+            avsal = GetEPAvSalary3(EPCalcresr,EPCalcResr.EmpCode,EPOffWorkr.StartDate,EPCalcresr.ContractNr,EPCalcresr.StartDate,curmv,GetAvSalDays(EPCalcResr,0),false,GetAvSalDays(EPCalcResr,1),false,hourf,hours,a_sal,a_obj,true,refreshf);  
+          end;
+          daysbefore = datediff(EPCalcResr.StartDate,EPOffWorkr.StartDate);
+          daysafter = datediff(EPOffWorkr.EndDate,EPCalcResr.StartDate) + 1;
+          if ((daysbefore < 0 and EPOffTrTyper.PayType !=1) or EPOffTrTyper.PayType == 1) then begin
+            daysbefore = 0;
+            offdatefrom = EPOFfWorkr.StartDate;
+          end else begin
+            offdatefrom = EPCalcResr.StartDate;   
+          end;  
+          ignorefree = false;
+          ignoreweekdays = false;
+          if (EPOffGrr.IncFree==1) then begin
+            ignorefree = true;//not to check if the day is a day free
+          end;
+          if (EPOffGrr.IncHol==1) then begin
+            ignoreWeekDays = true;//not to check if the day is a holiday
+          end;
+       
+          rwcnt = MatRowCnt(EPOffTrtyper);
+          countf = false;
+          addedf = false;
+          //trace("A","B");
+          for (i = 0; i < rwcnt; i = i + 1) begin
+            MatRowGet(EPOffTrtyper,i,EPOffTrtyperw);
+            if (EPOffTrtyperw.DaysTo > daysbefore and countf == false) then begin
+              countf = true;
+              curday = 0;
+            end else begin
+              alreadyadded = 0;
+              if (daysbefore>0 and alreadyadded==0) then begin
+                alreadyadded = daysbefore-EPOffTrtyperw.DaysTo;
+              end;
+            end;
+            if (countf) then begin
+              testf = false;
+              if (EPOffTrTyper.PayType==0) then begin
+                if (AddDay(offdatefrom,curday) <= EPOffWorkr.EndDate) then begin
+                  testf = true;
+                end;
+              end else begin
+                if (AddDay(offdatefrom,curday) <= EPOffWorkr.EndDate and AddDay(offdatefrom,curday) <= EPCalcResr.EndDate) then begin
+                  testf = true;
+                end;
+              end;
+              if (testf) then begin
+                
+                if (alreadyadded>0) then begin
+                  if (epofftrtyperw.DaysTo-epofftrtyperw.DaysFrom)>0 then begin
+                    if (epofftrtyperw.DaysTo-epofftrtyperw.DaysFrom)>=alreadyadded then begin
+                      epofftrtyperw.DaysFrom = epofftrtyperw.DaysFrom + alreadyadded;
+                    end;
+                  end;
+                end;              
+                sum = 0;
+                curday2 = curday;
+                EPOffWorkrw.Qty = 0;
+                GetPeriodAmount(sum,curday,offdatefrom,daysbefore,EPOffWorkr.EndDate,EPCalcResr.EndDate,epofftrtyperw.DaysTo - epofftrtyperw.DaysFrom,avsal,epofftrtyperw.Perc,ignorefree,ignoreweekdays,timecl,EPOffTrTyper.PayType,EPOffWorkr,repf,foundf,hourf,includehf,"");
+                curday = curday2;
+                GetPeriodDaycount(curday,offdatefrom,daysbefore,EPOffWorkr.EndDate,EPCalcresr.StartDate,EPCalcResr.EndDate,epofftrtyperw.DaysTo - epofftrtyperw.DaysFrom,offworkdays,caldaycorr,timecl,EPOffGrr,EPOffTrTyper);
+                if (EPPaybl.ObjectsAvSalary) then begin
+                  for (j=0;j<a_sal.length;j=j+1) begin 
+                    ratio = round(a_sal[j],SetRoundModeD(2))/avsal;
+                    tsum = sum*round(a_sal[j],SetRoundModeD(2))/avsal;
+                    if (tsum>0 and foundf) then begin
+                      addvaltoarray(tsum,epofftrtyperw.TrType,EPOffWorkr.SerNr,a_obj[j],amounts,trtypes,docnrs,offworkobjects,size);
+                    end;
+                  end;
+                end else begin
+                  if (sum > 0 and foundf) then begin
+                    addvaltoarray(sum,epofftrtyperw.TrType,EPOffWorkr.SerNr,"",amounts,trtypes,docnrs,offworkobjects,size);
+                  end;
+                end;
+              end else begin
+                i = rwcnt;
+              end;
+            end;
+          end;
+        end;
+      end;
+    end;
+  end;
+  
+  return;
+end;
+
+global 
+procedure GetEmpOffWorkGroupData(record EPCalcResVc EPCalcResr,record EPOffWorkVc EPOffWorkr,var longint offworkdays,var integer caldaycorr,val curmv,string timecl,var array string trtypes,var array val amounts,var array string docnrs,var integer size,boolean repf)
+begin
+  array string 255 offworkobjects;
+         GetEmpOffWorkGroupData2(EPCalcResr,EPOffWorkr,offworkdays,caldaycorr,curmv,timecl,trtypes,amounts,docnrs,size,false,offworkobjects);
+
+  return;
+end;
+
+global
+procedure GetEmpOffWorkAmount2(var record EPCalcResVc EPCalcresr,var array string trtypes,var array val amounts,var array string docnrs,var integer size,val salary,var longint offworkdays,var integer caldaycorr,string types,val curmv,var array string offworkobjects)
+begin
+  record EPContractVc EPcontractr;
+  record EPPayrollSetBlock EPPaybl;
+  record EPTrTypeVc EPTrTyper;
+  record EPTaxesVc EPTaxr;
+  record EPOffWorkVc EPOffWorkr;
+  
+  row EPOffWorkVc EPOffWorkrw;
+  string 20 timecl;
+  integer i,curday2;
+  longint templong;
+  boolean testf2,testf;
+  boolean trhs,wholeoffwrkf;
+  trhs = true;
+  blockload(EPPaybl);
+
+  EPContractr.ContractNr = EPCalcresr.ContractNr;
+  testf = ReadFirstMain(EPContractr,1,true);
+  timecl = EPContractFieldOnDate2(EPContractr,EPCalcResr.StartDate,"TimeClass");
+  EPOffWorkr.EmpCode = EPCalcResr.EmpCode;
+  while (loopKey("EmpCode",EPOffWorkr,1,trhs)) begin
+    testf2 = true;
+    if (EPOffWorkr.EmpCode != EPCalcresr.EmpCode) then begin
+      testf2 = false;
+      trhs = false;
+    end;   
+    if (EPOffWorkr.OKFlag == 0) then begin
+      testf2 = false;
+    end;
+    if (nonblank(EPOffWorkr.ContractNr) and EPCalcResr.ContractNr != EPOffWorkr.ContractNr) then begin
+      testf2 = false;
+    end;
+    if (types != "" and setinset(EPOffWorkr.Group,types)==false) then begin
+      testf2 = false;
+    end;
+    If (testf2) then begin  
+      GetEmpOffWorkGroupData2(EPCalcResr,EPOffWorkr,offworkdays,caldaycorr,curmv,timecl,trtypes,amounts,docnrs,size,false,offworkobjects);
+    end;
+  end;
+  return;
+end;
+
+global
+procedure GetEmpOffWorkAmount(var record EPCalcResVc EPCalcresr,var array string trtypes,var array val amounts,var array string docnrs,var integer size,val salary,var longint offworkdays,var integer caldaycorr,string types,val curmv)
+begin
+  array string 255 offworkobjects;
+
+  GetEmpOffWorkAmount2(EPCalcresr,trtypes,amounts,docnrs,size,salary,offworkdays,caldaycorr,types,curmv,offworkobjects);
+
+  return;
+end;
+
+
+procedure getstr(string tstr,integer pos,var string newstr)
+begin
+  integer i,l;
+  l = len(tstr);
+  newstr = "";
+  for (i = pos;i < l;i = i +1) begin
+    if (mid(tstr,i,1)=="+" or mid(tstr,i,1)=="-" or mid(tstr,i,1)=="/" or mid(tstr,i,1)=="*" or mid(tstr,i,1)==" " or i == l -1) then begin
+      if (i == l -1) then begin
+        i = i +1;
+      end;
+      newstr = mid(tstr,pos+1,i - pos-1);
+      i = l;
+    end;
+  end;
+return;
+end;
+
+global 
+function boolean GetEPContrChangeNextTRData(record EPContrChangeVc tEPContrChanger,row EPContrChangeVc tEPContrChangerw,date calced,var date tsd, var date ted,var date nextsd,var val resval,boolean continuef,Boolean checkobjf,string obj)
+begin
+  record EPContrChangeVc EPContrChanger;
+  row EPContrChangeVc EPContrChangerw;
+  date chsd,ched;
+  integer rw,rwc;
+  boolean TrHs,testf,res;
+
+  chsd = tsd;
+  ted = calced;
+  ched = calced;
+  
+  resval = tEPContrChangerw.Sum;
+  res = true;
+  if (continuef == false) then begin 
+    res = false;
+    Goto LExitContrChangeNextData;
+  end;
+  
+  if (nonblank(tEPContrChanger.EndDate) and tEPContrChanger.EndDate < calced) then begin
+    if (tEPContrChanger.EndDate > tsd) then begin
+      ted = tEPContrChanger.EndDate;
+      ched = ted;
+    end else begin
+      res = false;
+      //search contract change for the whole period
+    end;
+  end;
+  TrHs = true;
+  EPContrChanger.StartDate = "";
+  While (LoopKey("StartDate:" & tEPContrChanger.ContractNr,EPContrChanger,1,TrHs)) begin
+    if (EPContrChanger.StartDate > ched) then begin
+      TrHs = false;
+    end else begin
+      testf = true;
+      if (nonblank(EPContrChanger.EndDate) and EPContrChanger.EndDate < chsd) then begin
+        testf = false;
+      end;
+      if (EPContrChanger.Status == 0) then begin
+        testf = false;
+      end;
+      if (testf) then begin 
+        rwc = MatRowCnt(EPContrChanger);
+        for (rw = 0; rw < rwc; rw = rw + 1) begin
+          MatRowGet(EPContrChanger,rw,EPContrChangerw);
+          if (EPContrChangerw.TrType == tEPContrChangerw.TrType and (checkobjf==false or EPContrChangerw.Objects==obj)) then begin
+            if (EPContrChanger.StartDate <= tsd) then begin
+              if (EPContrChanger.StartDate <= chsd) then begin
+                tsd = chsd;
+              end else begin
+                tsd = EPContrChanger.StartDate;
+              end;
+              if (nonblank(EPContrChanger.EndDate) and EPContrChanger.EndDate < ched) then begin
+                ted = EPContrChanger.EndDate;
+              end else begin
+                ted = ched;
+              end;
+              resval = EPContrChangerw.Sum;
+            end;
+            if (DateInRange(AddDay(EPContrChanger.StartDate,-1),tsd,ted)) then begin
+              ted = AddDay(EPContrChanger.StartDate,-1);
+            end;
+            if (nonblank(EPContrChanger.EndDate) and EPContrChanger.EndDate < ted) then begin
+              ted = EPContrChanger.EndDate;
+              resval = EPContrChangerw.Sum;
+            end;
+            res = true;
+            rw = rwc;
+          end;
+        end;
+      end;
+    end;
+  end;
+  nextsd = ted;
+LExitContrChangeNextData:;
+  GetEPContrChangeNextTRData = res;
+return;
+end;
+
+global 
+function boolean GetEPContractNextTRData(record EPContractVc EPContractr,row EPContractVc EPContractrw,date calced,var date tsd, var date ted,var date nextsd,var val resval,boolean continuef,Boolean checkobjf,string obj)
+begin
+  record EPContrChangeVc EPContrChanger;
+  row EPContrChangeVc EPContrChangerw;
+  date chsd,ched;
+  integer rw,rwc;
+  boolean TrHs,testf,res;
+
+  chsd = tsd;
+  ted = calced;
+  ched = calced;
+  
+  resval = EPContractrw.Sum;
+  res = true;
+  if (continuef==false) then begin 
+    res = false;
+    Goto LExitNextData;
+  end;
+  if (nonblank(EPContractrw.FromDate) and EPContractrw.FromDate > tsd) then begin
+    if (EPContractrw.FromDate < calced) then begin
+      tsd = EPContractrw.FromDate;
+      ched = tsd;
+    end else begin
+      res = false;
+      //search contract change for the whole period
+    end;
+  end;
+  
+  if (nonblank(EPContractrw.ToDate) and EPContractrw.ToDate<calced) then begin
+    if (EPContractrw.ToDate > tsd) then begin
+      ted = EPContractrw.ToDate;
+      ched = ted;
+    end else begin
+      res = false;
+      //search contract change for the whole period
+    end;
+  end;
+  TrHs = true;
+  EPContrChanger.StartDate = "";
+  while (LoopKey("StartDate:" & EPContractr.ContractNr,EPContrChanger,1,TrHs)) begin
+    if (EPContrChanger.StartDate > ched) then begin
+      TrHs = false;
+    end else begin
+      testf = true;
+      if (nonblank(EPContrChanger.EndDate) and EPContrChanger.EndDate < chsd) then begin
+        testf = false;
+      end;
+      if (EPContrChanger.Status == 0) then begin
+        testf = false;
+      end;
+      if (testf) then begin 
+        rwc = MatRowCnt(EPContrChanger);
+        for (rw=0;rw<rwc;rw=rw+1) begin
+          MatRowGet(EPContrChanger,rw,EPContrChangerw);
+          if (EPContrChangerw.TrType==EPContractrw.TrType and (checkobjf==false or EPContractrw.Objects==obj)) then begin
+            if (EPContrChanger.StartDate<=tsd) then begin
+              if (EPContrChanger.StartDate<=chsd) then begin
+                tsd = chsd;
+              end else begin
+                tsd = EPContrChanger.StartDate;
+              end;
+              if (nonblank(EPContrChanger.EndDate) and EPContrChanger.EndDate < ched) then begin
+                ted = EPContrChanger.EndDate;
+              end else begin
+                ted = ched;
+              end;
+              resval = EPContrChangerw.Sum;
+            end;
+            if (DateInRange(AddDay(EPContrChanger.StartDate,-1),tsd,ted)) then begin
+              ted = AddDay(EPContrChanger.StartDate,-1);
+            end;
+            if (nonblank(EPContrChanger.EndDate) and EPContrChanger.EndDate<ted) then begin
+              ted = EPContrChanger.EndDate;
+              resval = EPContrChangerw.Sum;
+            end;
+            res = true;
+            rw = rwc;
+          end;
+        end;
+      end;
+    end;
+  end;
+  nextsd = ted;
+LExitNextData:;
+  GetEPContractNextTRData = res;
+return;
+end;
+
+procedure AddContractTrRowToCoEPCalc(var record EPCalcResrVc EPCalcResr,string trtype,val sum,string objects,val initrwcnt)
+begin
+  record EPTrTypeVc EPTrTyper;
+  row EPCalcResVc EPCalcResrw;
+  integer rw,rwc;
+  
+  rwc = MatRowCnt(EPCalcResr);
+  for (rw=0;rw<rwc;rw=rw+1) begin
+    MatRowGet(EPCalcResr,rw,EPCalcresrw);
+    if (EPCalcResrw.TrType==trtype and rw<initrwcnt) then begin
+      goto SKIPLINE;
+    end;
+    if (EPCalcResrw.TrType==trtype and EPCalcResrw.Objects==objects and rw>=initrwcnt) then begin
+      EPCalcResrw.Sum = EPCalcResrw.Sum + sum;
+      MatRowPut(EPCalcresr,rw,EPCalcresrw);
+      goto SKIPLINE;     
+    end;
+  end;
+  ClearRow(EPCalcresr,EPCalcResrw,1);
+  EPCalcResrw.TrType = trtype;
+  EPCalcResrw.RefDocType = 7;
+  EPCalcResrw.Sum = sum;
+  EPCalcResrw.Objects = objects;
+  EPTrTyper.Code = TrType;
+  if (ReadFirstMain(EPTrTyper,1,True)) Then Begin
+    EPCalcResrw.IncType = EPTrTyper.IncType;
+    EPCalcResrw.Comment = EPTrTyper.Name;
+  End;
+  MatRowPut(EPCalcresr,MatRowCnt(EPCalcResr),EPCalcresrw);
+SKIPLINE:;
+return;
+end;
+    
+global
+procedure AddEPEntryVal(record EPCalcResVc EPCalcResr,string trtype,val addsum,integer manf)
+begin
+  record EPTrTypeVc EPTrTyper;
+  row EPCalcResVc EPCalcresrw;
+  val sum;
+  integer rw,rwc,lastrow;
+  lastrow = -1;
+  if (trtype <>"" and manf==1) then begin
+    rwc = MatRowCnt(EPCalcresr);
+    for (rw = 0; rw < rwc; rw = rw + 1) begin
+      MatRowGet(EPCalcResr,rw,EPCalcResrw);
+      if (EPCalcResrw.TrType==trtype) then begin
+        if (sum > addsum) then begin
+          MatRowDelete(EPCalcresr,rw);
+          rw = rw - 1;
+          rwc = rwc - 1;
+        end else begin
+          sum = sum + EPCalcresrw.Sum;
+          lastrow = rw;
+        end;
+      end;
+    end;
+    if (lastrow >= 0) then begin
+      MatRowGet(EPCalcresr,lastrow,EPCalcresrw);
+      EPCalcResrw.Sum = EPCalcResrw.Sum - sum + addsum;
+      EPCalcResrw.RefDocType = 9;
+      EPCalcresrw.RefDocStr = CurrentDate & ":" & CurrentTime & " " & CurrentUser;
+      MatRowPut(EPCalcresr,lastrow,EPCalcresrw);
+    end else begin
+      if (addsum > 0) then begin
+        
+        ClearRow(EPCalcresr,EPCalcresrw,1);
+        EPCalcResrw.TrType = trtype;
+        EPTrTyper.Code = trtype;
+        if (ReadFirstMain(EPTrTyper,1,true)) then begin
+          EPCalcResrw.Comment = EPTrTyper.Name;
+          EPCalcresrw.IncType = EPTrTyper.IncType;
+        end;
+        EPCalcresrw.Sum = addsum;
+        EPCalcResrw.RefDocType = 9;
+        EPCalcresrw.RefDocStr = CurrentDate & ":" & CurrentTime & " " & CurrentUser;
+        MatRowPut(EPCalcResr,MatRowCnt(EPCalcResr),EPCalcresrw);
+
+      end;
+    end;
+  end;
+
+  return;
+end;
+    
+procedure AddContractAmounts(var record EPCalcResVc EPCalcResr,record EPPayrollSetBlock EPPayrollSetr,record EPEntrySetBlock EPEntrySetBl,row EPEntryVc EPEntryrw)
+begin
+  array string 255 addedtr;
+  integer size;
+  record EPContrChangeVc EPContrChanger;
+  row EPContrChangeVc EPContrChangerw;
+  record EPContractVc EPContractr;
+  record EPTrTypeVc EPtrTyper;
+  row EPContractVc EPContractrw;
+  row EPCalcResVc EPCalcResrw;
+  string 20 timecl;
+  date nextsd;
+  integer i,ark,rwc,rw,initrwcnt,j;
+  val workdays,perworkdays,res,tval;
+  date rsd,red;
+  boolean testf,TrHs,trHs2;
+
+  initrwcnt = MatRowCnt(EPCalcResr);
+  
+  EPContractr.ContractNr=EPCalcResr.ContractNr;
+  if (ReadFirstMain(EPContractr,1,true)) then begin
+    if (EPPayrollSetr.AccVacFlag==1 and EPPayrollSetr.AccVacTrType<>"") then begin
+      if (dateinrange(EPContractr.EndDate,EPCalcresr.StartDate,EPCalcResr.EndDate)) then begin
+        EPtrTyper.Code = EPPayrollSetr.AccVacTrType;
+        if (ReadFirstMain(EPtrTyper,1,true)) then begin
+          ClearRow(EPCalcresr,EPCalcResrw,1);
+          EPCalcResrw.Comment = EPtrTyper.Name;
+          EPCalcResrw.TrType = EPtrTyper.Code;
+          EPCalcResrw.Sum = EPGetAccVacCalc(EPContractr,EPContractr.EndDate);
+          MatRowPut(EPCalcResr,MatRowCnt(EPCalcResr),EPCalcresrw)
+        end;
+      end;
+    end;
+    EPCalcResr.CalcEmpType = EPContractr.ContractEmpType;
+
+    ark = MatRowCnt(EPContractr);
+    for (i=0;i<ark;i=i+1) begin
+      MatRowGet(EPContractr,i,EPContractrw);
+      if (EPContractrw.Type > 0 and (blank(EPContractrw.ToDate) or EPContractrw.ToDate>EPCalcResr.EndDate)) then begin //take only valid trtypes     
+        rsd = EPCalcResr.StartDate;
+        TrHs = true;
+        res = 0;
+        While (GetEPContractNextTRData(EPContractr,EPContractrw,EPCalcResr.EndDate,rsd,red,nextsd,res,TrHs,false,"")) begin
+          timecl = EPContractFieldOnDate2(EPContractr,rsd,"TimeClass");
+          workdays = amountofworkdays(EPCalcresr.StartDate,EPCalcresr.EndDate,true,timecl);
+          perworkdays = amountofworkdays(rsd,red,true,timecl);          
+          tval = res * perworkdays/workdays;
+          AddContractTrRowToCoEPCalc(EPCalcResr,EPContractrw.TrType,tval,EPContractrw.Objects,initrwcnt);
+          for (j=0;j<size;j=j+1) begin
+            if (addedtr[j]==EPContractrw.TrType) then begin goto LSkipTrAdd; end;
+          end;
+          addedtr[size] = EPContractrw.TrType;
+          size = size + 1;
+      LSkipTrAdd:;  
+          rsd = AddDay(nextsd,1);
+          if (nextsd>=EPCalcResr.EndDate) then begin
+            TrHs = false;
+          end;
+          res = 0;
+        end;
+      end;
+    end;
+    TrHs = true; 
+    EPContrChanger.StartDate = "";
+    while (LoopKey("StartDate:" & EPContractr.ContractNr,EPContrChanger,1,TrHs)) begin
+      if (EPContrChanger.StartDate>EPCalcResr.EndDate) then begin
+        TrHs = false;
+      end else begin
+        testf = true;
+        if (nonblank(EPContrChanger.EndDate) and EPContrChanger.EndDate < EPCalcResr.StartDate) then begin
+          testf = false;
+        end;
+        if (EPContrChanger.Status==0) then begin
+          testf = false;
+        end;
+        if (testf) then begin 
+          rwc = MatRowCnt(EPContrChanger);
+          for (rw=0;rw<rwc;rw=rw+1) begin
+            MatRowGet(EPContrChanger,rw,EPContrChangerw);
+            if (EPContrChangerw.Type>0) then begin
+              for (j=0;j<size;j=j+1) begin
+                if (addedtr[j]==EPContrChangerw.TrType) then begin goto LSkipAddRestType; end;
+              end;
+              rsd = EPContrChanger.StartDate;
+              red = "";
+              nextsd ="";
+              TrHs2 = true;
+              while (GetEPContrChangeNextTRData(EPContrChanger,EPContrChangerw,EPCalcResr.EndDate,rsd,red,nextsd,res,TrHs2,false,"")) begin
+                if (DateInRange(EPCalcResr.StartDate,rsd,red) or DateInRange(EPCalcResr.EndDate,rsd,red)) then begin
+                  if (rsd<EPCalcResr.StartDate) then begin
+                    rsd = EPCalcResr.StartDate;
+                  end;
+                  timecl = EPContractFieldOnDate2(EPContractr,rsd,"TimeClass");
+                  workdays = amountofworkdays(EPCalcresr.StartDate,EPCalcresr.EndDate,true,timecl);
+                  perworkdays = amountofworkdays(rsd,red,true,timecl);          
+                  tval = res * perworkdays/workdays;
+                  AddContractTrRowToCoEPCalc(EPCalcResr,EPContrChangerw.TrType,tval,EPContrChangerw.Objects,initrwcnt);
+                  for (j=0;j<size;j=j+1) begin
+                    if (addedtr[j]==EPContrChangerw.TrType) then begin goto LSkipTrAdd2; end;
+                  end;
+                  addedtr[size] = EPContrChangerw.TrType;
+                  size = size + 1;
+              LSkipTrAdd2:;  
+                end;
+                rsd = AddDay(nextsd,1);
+                if (nextsd>=EPCalcResr.EndDate) then begin
+                  TrHs2 = false;
+                  goto LSkipAddRestType;
+                end;
+                res = 0;
+              end;
+            end;
+         LSkipAddRestType:;
+          end;
+        end;
+      end;
+    end;
+  end;
+  if (EPEntryrw.ContractNr==EPContractr.ContractNr) then begin
+    AddEPEntryVal(EPCalcResr,EPEntrySetBl.COTrType1,EPEntryrw.Salary1,EPEntryrw.ManSalary1f);
+    AddEPEntryVal(EPCalcResr,EPEntrySetBl.COTrType2,EPEntryrw.Salary2,EPEntryrw.ManSalary2f);
+    AddEPEntryVal(EPCalcResr,EPEntrySetBl.COTrType3,EPEntryrw.Salary3,EPEntryrw.ManSalary3f);
+  end;
+
+return;
+end;
+
+procedure AddCalcCorAmounts(record EPCalcResVc EPCalcResr)
+begin
+  record EPCalcCorVc EPCalcCorr;
+  row EPCalcCorVc EPCalcCorrw;
+  row EPCalcResVc EPCalcResrw;
+  integer rw,rwc;
+  boolean Trhs;
+  boolean testf;
+  
+  EPCalcCorr.ContractNr = EPCalcResr.ContractNr;
+  TrHs = true;
+  while (LoopKey("ContractNr",EPCalcCorr,1,Trhs)) begin
+    if (EPCalcCorr.ContractNr <> EPCalcResr.ContractNr) then begin
+      TrHs = false;
+    end else begin
+      testf  = true;
+      if (EPCalcCorr.StatusFlag <> 0) then begin
+        testf = false;
+      end;
+      if (testf) then begin
+        rwc = MatRowCnt(EPCalcCorr);
+        for (rw = 0; rw < rwc; rw = rw + 1) begin
+          MatRowGet(EPCalcCorr,rw,EPCalcCorrw);
+          EPCalcresrw.TrType = EPCalcCorrw.TrType;
+          EPCalcresrw.Comment = EPCalcCorrw.Comment;
+          EPCalcResrw.IncType = EPCalcCorrw.IncType;
+          EPCalcResrw.Sum = EPCalcCorrw.Sum;
+          EPCalcResrw.RefDocType = 8;
+          EPCalcResrw.RefDocStr = EPCalcCorr.SerNr;
+          MatRowPut(EPCalcResr,MatRowCnt(EPCalcResr),EPCalcresrw);
+        end;
+      end;
+    end;
+  end;
+return;
+end;
+
+function boolean TrTypeAlreadyAdded(record EPCaclResVc EPCalcResr,string code)
+begin
+  boolean res;
+  integer i,rwcnt;
+  row EPCalcResVc EPCalcResrw;
+  
+  res = false;
+  rwcnt = MatRowCnt(EPCalcResr);
+  for (i=0;i<rwcnt;i=i+1) begin
+    MatRowGet(EPCalcResr,i,EPCalcResrw);
+    if (EPCalcResrw.TrType==code and EPCalcResrw.Objects=="") then begin
+      res = true;
+      i = rwcnt;
+    end;
+  end;
+
+  TrTypeAlreadyAdded = res;
+  return;
+end;
+
+function val GetObjectAmount(array val avsal_sum,array string avsal_obj,string objstr)
+begin
+  Integer i;
+  val res;
+  
+  for (i=0;i<avsal_sum.length;i=i+1) begin
+    if (avsal_obj[i]==objstr) then begin
+      res = avsal_sum[i];
+      i = avsal_sum.length;
+    end;
+  end;
+
+  GetObjectAmount = res;
+  return;
+end;
+
+function string 255 SearchForTaxJournal(string empcode,Date td)
+begin
+  string 255 res;
+  record EPNonTaxableAmountVc EPNAr;
+
+  res = 0;
+  EPNAr.StartDate = td;
+  if (ReadLastKey("StartDate:" & empcode,EPNAr,1,false)) then begin
+    if ((blank(EPNAr.EndDate) or EPNAr.EndDate>=td) and EPNAr.StartDate<=td) then begin 
+      res = 1;
+    end;
+  end;
+
+  SearchForTaxJournal = res;
+  return;
+end;
+
+procedure CalcObjectForSingleOperation(var record EPCalcResVc EPCalcResr,record EPContractVc EPContractr,string taxgroup,array string Objcodes,Integer size,Date d1,Date d2,record EPPayrollSetBlock EPPayrollSetr,record EPConstBlock EPConstr,row TaxRepVc TaxReprw,string formula,var record SMVc vararrayobj,var array record SMVc obj_vararray,Boolean alreadyaddedf,array val avsal_sum,array string avsal_obj,array val avsalhours_sum,array string avsalhours_obj)
+begin
+  integer ar,i,j,k,ark,a,z;
+  record SMVc vararray,vararrayobj2,tempvarar;
+  row EPConstBlock EPConstrw;
+  row EPCalcResVc EPCalcResrw,EPCalcrw;
+  string 255 tempa,tempaobj;
+  record EPTrTypeVc EPTrTyper;
+  string 255 tstr;
+  val dayamount,whours,whours2;
+  row EPContractVc EPContractrw;
+  Boolean foundf;
+ 
+  i = MatRowCnt(EPCalcResr);
+  ark = MatRowCnt(EPContractr);
+  for (a = 0; a < size; a = a + 1) begin
+    //RecordNew(vararray);
+    vararray = obj_vararray[a];
+    if (MatRowCnt(vararray)==0) then begin
+      addvarval("D1",vararray,datetostring(d1,"DD/MM/YYYY")); 
+      addvarval("D2",vararray,datetostring(d2,"DD/MM/YYYY")); 
+      addvarval("TAXGROUP",vararray,taxgroup);     
+      addvarval("CONTRACT",vararray,EPCalcResr.ContractNr);  
+      addvarval("TAXJOURNAL",vararray,SearchForTaxJournal(EPCalcResr.EmpCode,d2));  
+      
+         
+      AddEPCalcDays(EPCalcResr,vararrayobj2,vararray,epPayrollSetr);
+      if (EPPayrollSetr.AccVacFlag==1 and EPPayrollSetr.AccVacTrType<>"") then begin
+        if (dateinrange(EPContractr.EndDate,EPCalcresr.StartDate,EPCalcResr.EndDate)) then begin
+          addvarval(EPPayrollSetr.AccVacTrType,vararray,EPGetAccVacCalc(EPContractr,EPContractr.EndDate));     
+        end;
+      end;
+    
+      ar=MatRowCnt(EPConstr);
+      for (j=0;j<ar;j=j+1) begin
+        MatRowGet(EPConstr,j,EPConstrw);
+        if (EPConstrw.SDate<=d2) and (blank(EPConstrw.EDate) or EPConstrw.EDate>=d2) then begin
+          addvarval(EPConstrw.Code,vararray,EPConstrw.Sum); 
+        end;
+      end;
+      ar=MatRowCnt(EPCalcResr);
+      for (j=0;j<ar;j=j+1) begin
+        MatRowGet(EPCalcResr,j,EPCalcResrw);
+        if (nonblank(EPCalcResrw.TrType) and EPCalcresrw.Objects == Objcodes[a]) then begin
+          addvarvalAdd(EPCalcResrw.TrType,vararray,ValToString(EPCalcResrw.Sum,M423Val,"",".",0)); 
+        end;
+      end;
+    end;
+    tstr = formula;
+    FindCalcResAvSal("AVSAL",EPCalcResr,tstr,tstr,GetObjectAmount(avsal_sum,avsal_obj,objcodes[a]));
+    FindCalcResAvSal("AVHSAL",EPCalcResr,tstr,tstr,GetObjectAmount(avsalhours_sum,avsalhours_obj,objcodes[a]));
+    FindCalcResAvSal("HOURS",EPCalcResr,tstr,tstr,whours);
+    FindCalcResAvSal("HOURS2",EPCalcResr,tstr,tstr,whours2);
+
+    EPFindSplitSalary(EPContractr,EPCalcResr,tstr,true,objcodes[a]);
+    TaxReprw.Formula = tstr;
+    tempa=valtostring(FCALCWITHVARPayCheckSum(TaxReprw.Formula,vararray,TaxReprw.FCode,EPCalcResr),M4Val,"",".",0);
+
+    obj_vararray[a] = vararray;
+    if (EPPayrollSetr.CalcTrTypeFlag==0) then begin
+      if (StringToVal(tempa,M4Val)!=0) then begin
+        for (k=0;k<ark;k=k+1) begin
+          MatRowGet(EPContractr,k,EPContractrw);
+          if (EPContractrw.Type==0) and (EPContractrw.TrType==TaxReprw.FCode) then begin
+            EPTrTyper.Code = TaxReprw.FCode;
+            if (ReadFirstMain(EPtrTyper,1,true)) then begin
+              if (/*EPTrTyper.TrCreate == 1 and */EPTrTyper.AllowSep==1) then begin
+                if (alreadyaddedf==false) then begin
+                  addvarvalAdd(TaxReprw.FCode,vararrayobj,tempa);
+                end;
+                for (z = i;z >= 0;z = z - 1) begin
+                  MatRowGet(EPCalcResr,z,EPCalcresrw);
+                  if (EPCalcResrw.Objects == objcodes[a]) then begin
+                    ClearRow(EPCalcresr,EPCalcresrw,1);
+                    EPCalcResrw.TrType=TaxReprw.FCode;
+                    EPCalcResrw.Comment=EPContractrw.Text;
+                    EPCalcResrw.Sum=StringToVal(tempa,M4Val);
+                    EPCalcresrw.Objects = objcodes[a];
+                    EPCalcResrw.RefDocType = 0;
+                    EPCalcResrw.RefDocStr = "";
+                    EPCalcResrw.IncType = "";
+                    EPTrTyper.Code = EPCalcResrw.TrType;
+                    if (ReadFirstMain(EPtrTyper,1,true)) then begin                
+                      if (EPTrtyper.AllowSep==0 or size == 0) then begin
+                        EPCalcResrw.IncType = EPtrTyper.IncType;
+                      end;
+                    end;
+                    if (z == i) then begin
+                      MatRowPut(EPCalcResr,z+1,EPCalcResrw);
+                    end else begin
+                      MatRowInsert(EPCalcResr,z+1,EPCalcResrw);
+                    end;
+                    z = 0;
+                    i = i + 1;
+                    k=ark;
+                  end;
+                end;
+              end;
+            end;
+          end;
+        end;
+      end;
+    end else begin      
+      EPTrTyper.Code = TaxReprw.FCode;
+      if (ReadFirstMain(EPtrTyper,1,true)) then begin
+        if (/*EPTrTyper.TrCreate == 1 and */EPTrTyper.AllowSep==1) then begin
+          if (alreadyaddedf==false) then begin
+            addvarvalAdd(TaxReprw.FCode,vararrayobj,tempa);
+          end;
+          foundf = false;
+          for (z = i;z >= 0;z = z - 1) begin
+            MatRowGet(EPCalcResr,z,EPCalcresrw);
+            if (EPCalcResrw.Objects == objcodes[a]) then begin
+              ClearRow(EPCalcresr,EPCalcresrw,1);
+              EPCalcResrw.TrType=TaxReprw.FCode;
+              EPCalcResrw.Comment=EPtrTyper.Name;
+              EPCalcResrw.Sum=StringToVal(tempa,M423Val);
+              EPCalcresrw.Objects = objcodes[a];
+              EPCalcResrw.RefDocType = 0;
+              EPCalcResrw.RefDocStr = "";
+              EPCalcResrw.IncType = "";
+              if (z == i) then begin
+                MatRowPut(EPCalcResr,z+1,EPCalcResrw);
+              end else begin
+                MatRowInsert(EPCalcResr,z+1,EPCalcResrw);
+              end;
+              z = 0;
+              i = i + 1;
+              foundf = true;
+            end;
+          end;
+          if (!foundf and TaxReprw.FCode!="") then begin
+            ClearRow(EPCalcresr,EPCalcresrw,1);
+            EPCalcResrw.TrType=TaxReprw.FCode;
+            EPCalcResrw.Comment=EPtrTyper.Name;
+            EPCalcResrw.Sum=StringToVal(tempa,M423Val);
+            EPCalcresrw.Objects = objcodes[a];
+            EPCalcResrw.RefDocType = 0;
+            EPCalcResrw.RefDocStr = "";
+            EPCalcResrw.IncType = "";
+            MatRowPut(EPCalcResr,i,EPCalcResrw);
+            i = i + 1;
+          end;
+        end;
+      end;
+    end;
+  end;
+  
+  return;
+end;
+
+function Boolean DateInMonth(Date d1,Date d2)
+begin
+  Boolean res;
+    
+  if (GetYear(d1)==GetYear(d2) and GetMonth(d1)==GetMonth(d2)) then begin
+    res = true;
+  end;
+  
+  DateInMonth = res;
+  return;
+end;
+
+procedure RefreshCalcDates(var record EPCalcResVc EPCalcResr,record EPPayrollSetBlock EPPayrollSetr)
+begin
+  record EPContractVc EPContractr;
+  Date d1,d2;
+  Boolean genf;
+  
+  if (EPPayrollSetr.CreateDate==1) then begin
+    getdateperiod(EPCalcResr.ContractNr,EPCalcResr.StartDate,d1,d2,genf);
+    if (genf==false) then begin
+      messagebox(0,USetStr(1524640));
+    end;
+    EPCalcResr.StartDate = d1;
+    EPCalcResr.EndDate = d2;
+  end;
+  
+  return;
+end;
+
+procedure ShowTempArray(record SMVc SMr)
+begin
+  row SMVc SMrw;
+  Integer i,rwcnt;
+  
+  rwcnt = MatRowCnt(SMr);
+  for (i=0;i<rwcnt;i=i+1) begin
+    MatRowGet(SMr,i,SMrw);
+    LogText(0,SMrw.AccNumber & ":" & SMrw.Objects & ":" & ":" & SMrw.Comment & ":" & SMrw.DebVal);
+  end;
+  
+  LogText(0,"---------");
+
+  return;
+end;
+
+procedure RefreshObjectList(record EPCalcResVc EPCalcResr,var array string objcodes,array record SMVc obj_vararray,var Integer size)
+begin
+  Integer i,j,a,ar;
+  row EPCalcResVc EPCalcResrw;
+  record SMVc tempvarar;
+
+  ar = MatRowCnt(EPCalcResr);
+  for (j=0;j<ar;j=j+1) begin
+    MatRowGet(EPCalcResr,j,EPCalcResrw);
+    if (nonblank(EPCalcResrw.TrType) and nonblank(EPCalcresrw.Objects)) then begin
+      for (a = 0; a < size; a = a + 1) begin
+        if (objcodes[a] == EPCalcResrw.Objects) then begin
+          goto LExitObj;
+        end;
+      end;
+      objcodes[size] = EPCalcResrw.Objects;
+      obj_vararray[size] = tempvarar;
+      size = size + 1;
+LExitObj:;
+    end;
+  end;
+
+  return;
+end;
+
+procedure AddObjToObjList(var array string objcodes,array record SMVc obj_vararray,var Integer size,array string arrobjcode)
+begin
+  Integer i,j,a,ar;  
+  record SMVc tempvarar;
+  Boolean foundf;
+
+  for (i=0;i<arrobjcode.length;i=i+1) begin
+    if (nonblank(arrobjcode[i])) then begin
+      foundf = false;
+      for (j=0;j<size;j=j+1) begin
+        if (objcodes[j]==arrobjcode[i]) then begin
+          foundf = true;
+          goto LNext;
+        end;
+      end;
+      if (!foundf) then begin
+        objcodes[size] = arrobjcode[i];
+        obj_vararray[size] = tempvarar;
+        size = size + 1;
+      end;
+    end;
+LNext:;
+  end;
+
+  return;
+end;
+
+
+global 
+procedure EPCalc2(var record EPCalcResVc EPCalcResr,row EPEntryVc EPEntryrw,record EPEntrySetBlock EPEntrySetbl,Boolean isrefreshf)
+begin 
+  array val offworkamounts;
+  array string 20 trtypes;
+  array string 20 docnrs;
+  array integer doctypes;
+  array val amounts;
+  array string 20 objcodes;
+  
+  record EPCalcResVc EPCalcr,EPCalcresr2,EPCalcResrtemp;
+  record EPCalcDaysVc EPCalcDaysr;
+  record EPCalcResFieldsBlock EPCalcrbl;
+  record EPEmpVc EPEmpr;
+  row EPCalcResVc EPCalcResrw,EPCalcrw;
+  integer ar,i,j,k,ark;
+  Record TaxRepVc TaxRepr;
+  record EPTaxesVc EPTaxesr;
+  Record EPContractVc EPContractr;
+  record EPPayrollSetBlock EPPayrollSetr;
+  Record EPConstBlock EPConstr;
+  record EPTrTypeVc EPTrTyper;
+  
+  row EPConstBlock EPConstrw;
+  row EPCalcResFieldsBlock EPCalcrrw;
+  row EPContractVc EPContractrw;
+  row TaxRepVc TaxReprw;
+  record SMVc vararray,vararrayobj,tempvarar;
+  val avsal;
+  longint workdays;
+//  string 20 timecl;
+  string 50  tempa,tempa1,tempa2,tempaobj,tempa2obj; 
+  string 255 tstr,tstr2;
+  string 100 curobject;
+  integer l,z,tempint;
+  integer beg,a,calcorr;
+  integer rw,rwc,rw2,rwc2;
+  integer size,fieldnr;
+  boolean foundf,TrHs,firstf,firstf2,foundtaxf;
+  longint offworkdays,realworkdays;
+  string 20 taxgroup;
+  string 255 formula;
+  date sd;
+  val sum,s,curmv,whours,whours2;
+  transaction string 1 gDelimCharacter;
+  array string 255 offworkobjects;
+  array record SMVc obj_vararray;
+  val hours;
+  array val avsal_sum,avsalhours_sum,dummyvalarr;
+  array string 255 avsal_obj,avsalhours_obj;
+  Boolean hourf,refreshf;
+
+  date d1,d2,d3;
+  date rsd,red;
+  boolean testf,alreadyaddedf;
+  val tempval,curdayamount,dayamount,dayamounthours;
+  blockload(EPPayrollSetr);
+  blockload(EPCalcrbl);
+  blockload(EPConstr);
+  
+  
+  RefreshCalcDates(EPCalcResr,EPPayrollSetr);
+  
+  if (isrefreshf) then begin
+    dayamount = GetEPAvSalary3(EPCalcresr,EPCalcResr.EmpCode,EPCalcResr.StartDate,EPCalcresr.ContractNr,EPCalcresr.StartDate,curmv,GetAvSalDays(EPCalcResr,0),false,GetAvSalDays(EPCalcResr,1),false,hourf,hours,avsal_sum,avsal_obj,false,refreshf);  
+    dayamounthours = GetEPAvSalary3(EPCalcresr,EPCalcResr.EmpCode,EPCalcResr.StartDate,EPCalcresr.ContractNr,EPCalcresr.StartDate,curmv,GetAvSalDays(EPCalcResr,0),false,GetAvSalDays(EPCalcResr,1),false,hourf,hours,avsalhours_sum,avsalhours_obj,true,refreshf);  
+  
+  end;
+  
+  if (EPPayrollSetr.DelCalcRowsFlag==1) then begin
+    rwc = MatRowCnt(EPCalcresr);
+    for (i = 0;i < rwc; i = i + 1) begin
+      matrowdelete(EPCalcresr,0);
+    end;
+  end;
+
+  RecordNew(vararray); 
+  d1=EPCalcResr.StartDate;
+  d2=EPCalcResr.EndDate;
+  if (blank(d1)) then begin d1=EPCalcResr.TransDate;end;
+  if (blank(d2)) then begin d2=EPCalcResr.TransDate;end;
+  
+  addvarval("D1",vararray,datetostring(d1,"DD/MM/YYYY")); 
+  addvarval("D2",vararray,datetostring(d2,"DD/MM/YYYY")); 
+  addvarval("D1",vararrayobj,datetostring(d1,"DD/MM/YYYY")); 
+  addvarval("D2",vararrayobj,datetostring(d2,"DD/MM/YYYY")); 
+  
+  GetEmpTaxGroup(EPCalcResr.EmpCode,EPCalcResr.StartDate,taxgroup);
+  
+  addvarval("TAXGROUP",vararray,taxgroup);     
+  addvarval("TAXGROUP",vararrayobj,taxgroup);     
+
+  addvarval("CONTRACT",vararray,EPCalcResr.ContractNr);     
+  addvarval("CONTRACT",vararrayobj,EPCalcResr.ContractNr);     
+  addvarval("TAXJOURNAL",vararray,SearchForTaxJournal(EPCalcResr.EmpCode,EPCalcResr.EndDate));  
+  addvarval("TAXJOURNAL",vararrayobj,SearchForTaxJournal(EPCalcResr.EmpCode,EPCalcResr.EndDate));  
+
+  ar = MatRowCnt(EPCalcResr);
+  
+  EPContractr.ContractNr = EPCalcResr.ContractNr;
+  if (ReadFirstMain(EPContractr,1,true)) then begin
+  end;
+  ark = MatRowCnt(EPContractr);
+  
+  AddContractAmounts(EPCalcResr,EPPayrollSetr,EPEntrySetBl,EPEntryrw); // getting contract amounts
+  AddCalcCorAmounts(EPCalcResr); // getting corrections from previous periods
+  AccumulatePrevTrTypes(EPCalcResr,EPContractr);// getting previous month amounts
+  AddConstData(EPCalcResr,vararray,vararrayobj);// adding constants
+  AddHourlyRate(EPCalcResr,vararray,vararrayobj);// add emp hourly rate
+  EPCalcBonussAmount(EPCalcResr,EPEntrySetBl,EPEntryrw);// adding bonusess
+  size = 0;
+
+  GetTSRec(EPCalcResr,trtypes,amounts,docnrs,doctypes,size);    // adding time sheets
+  rwc = MatRowCnt(EPCalcresr);
+  for (i = 0;i < size; i = i + 1) begin
+
+    EPCalcresrw.Sum = Round(amounts[i],SetRoundModeD(2));
+    EPCalcresrw.TrType = firstinrange(trtypes[i],20);
+    EPCalcResrw.Objects = right(trtypes[i],len(trtypes[i])-len(EPCalcresrw.TrType)-1);
+    EPTrTyper.Code = EPCalcresrw.TrType;
+    if (ReadFirstMain(EPTrTyper,1,true)) then begin
+      EPCalcResrw.Comment = EPTrTyper.Name;
+      if (EPTrTyper.Objects <>"" ) then begin
+        if (EPCalcResrw.Objects<>"") then begin EPCalcResrw.Objects = EPCalcResrw.Objects & ","; end;
+        EPCalcResrw.Objects = EPCalcResrw.Objects & EPTrTyper.Objects;
+      end;
+      EPCalcResrw.RefDocType = doctypes[i];
+      EPCalcResrw.RefDocStr = docnrs[i];
+      EPCalcResrw.IncType = EPTrTyper.IncType;
+    end;
+    MatRowPut(EPCalcresr,rwc,EPCalcresrw);
+    rwc = rwc + 1;
+  end;
+
+  size=0;  
+  tempval = 0;
+  curmv = 0;
+
+  GetCurFakeRec(EPCalcResr,EPCalcResr2,vararrayobj,EPPayrollSetr,EPContractr,curmv);
+  // äaj‚ viet‚ netiek izr•úin‚ts nostr‚d‚to dienu skaits no laika tabul‚m
+  //labojums - stundu nav, bet tikunt‚ nevajaddz•tu nekam atäúirties
+//  dayamount = GetEPAvSalary(EPCalcResr,EPCalcResr.EmpCode,EPCalcResr.StartDate,EPCalcresr.ContractNr,EPCalcResr.StartDate,curmv,GetAvSalDays(EPCalcResr,0),false,GetAvSalDays(EPCalcResr,1),false);
+
+  if (!isrefreshf) then begin
+    dayamount = GetEPAvSalary3(EPCalcresr,EPCalcResr.EmpCode,EPCalcResr.StartDate,EPCalcresr.ContractNr,EPCalcresr.StartDate,curmv,GetAvSalDays(EPCalcResr,0),false,GetAvSalDays(EPCalcResr,1),false,hourf,hours,avsal_sum,avsal_obj,false,refreshf);  
+    dayamounthours = GetEPAvSalary3(EPCalcresr,EPCalcResr.EmpCode,EPCalcResr.StartDate,EPCalcresr.ContractNr,EPCalcresr.StartDate,curmv,GetAvSalDays(EPCalcResr,0),false,GetAvSalDays(EPCalcResr,1),false,hourf,hours,avsalhours_sum,avsalhours_obj,true,refreshf);  
+  end;
+  
+  whours = GetContractWorkedHours(EPContractr,EPCalcresr.StartDate,EPCalcresr.EndDate);
+  whours2 = GetContractWorkedHours2(EPContractr,EPCalcresr.StartDate,EPCalcresr.EndDate,false,dummyvalarr);
+  
+  TaxRepr.Code = EPContractFieldOnDate2(EPContractr,EPCalcResr.StartDate,"Calc");
+  
+  foundtaxf = false;
+  if (ReadFirstMain(TaxRepr,1,true)) then begin
+    if (blank(TaxRepr.Delimiter)) then begin
+      gDelimCharacter = ",";
+    end else begin
+      gDelimCharacter = TaxRepr.Delimiter;
+    end;
+ 
+    ar = MatRowCnt(EPCalcResr);
+    recordcopy(tempvarar,vararray);
+    for (i=0;i<ar;i=i+1) begin
+      MatRowGet(EPCalcResr,i,EPCalcResrw);
+      if (nonblank(EPCalcResrw.TrType)) then begin
+        addvarvalAdd(EPCalcResrw.TrType,tempvarar,ValToString(EPCalcResrw.Sum,M423Val,"",".",0)); 
+      end;  
+    end; 
+  
+
+    foundtaxf = true;
+    /*
+    if (IsMaintenance) then begin // KSO
+      addvarval("AVSAL",tempvarar,dayamount); 
+      MatRowGet(TaxRepr,0,TaxReprw);
+      if (Taxreprw.FCode == "AVSAL") then begin
+        dayamount=FCALCWITHVARPay(TaxReprw.Formula,tempvarar,TaxReprw.FCode);  
+      end;
+      addvarval("AVSAL",vararray,dayamount); 
+      addvarval("AVSAL",vararrayobj,dayamount); 
+    end; // KSO
+    */
+  end;
+  FillCalcDayFields(EPCalcResr);//vg
+  FillCalcDayFields(EPCalcResr2);//vg
+  //i = OpenWindow("EPCalcResDClass",1,0,"","",EPCalcResr2);
+  GetEmpOffWorkAmount2(EPCalcResr2,trtypes,offworkamounts,docnrs,size,dayamount,offworkdays,calcorr,"",curmv,offworkobjects);
+
+  AddEPCalcDays(EPCalcResr,vararray,vararrayobj,epPayrollSetr);
+
+  //======= adding absence amounts
+  ar = MatRowCnt(EPCalcresr);
+  for (i = 0;i < size; i = i + 1) begin
+    ClearRow(EPCalcResr,EPCalcResrw,0);
+    EPCalcresrw.Sum = round(offworkamounts[i],SetRoundModeD(2));
+    EPCalcresrw.Objects = offworkobjects[i];
+    EPCalcresrw.TrType = trtypes[i];
+    EPCalcResrw.RefDocType = 1;
+    EPCalcResrw.RefDocStr = docnrs[i];
+    EPTrTyper.Code = trtypes[i];
+    if (ReadFirstMain(EPTrTyper,1,true)) then begin
+      EPCalcResrw.Comment = EPTrTyper.Name;
+      if (blank(EPCalcResrw.Objects)) then begin
+        EPCalcResrw.Objects = EPTrTyper.Objects;
+      end;
+      EPCalcResrw.IncType = EPCalcResrw.IncType;
+    end;
+    MatRowPut(EPCalcresr,ar,EPCalcresrw);
+    ar = ar + 1;
+  end;
+  ClearRow(EPCalcResr,EPCalcResrw,0);
+  
+  // ====== adding prevelegies
+  size = 0;
+  CalculatePrivilegies(EPCalcResr,trtypes,amounts,doctypes,size);
+  rwc = MatRowCnt(EPCalcresr);
+  for (i = 0;i < size; i = i + 1) begin
+    EPCalcresrw.Sum = round(amounts[i],SetRoundModeD(2));
+    EPCalcresrw.TrType = trtypes[i];
+    EPCalcResrw.RefDocType = doctypes[i];
+    EPTrTyper.Code = trtypes[i];
+    if (ReadFirstMain(EPTrTyper,1,true)) then begin
+      EPCalcResrw.Comment = EPTrTyper.Name;
+      EPCalcResrw.Objects = EPTrTyper.Objects;
+    EPCalcResrw.IncType = EPCalcResrw.IncType;
+    end;
+    MatRowPut(EPCalcresr,rwc,EPCalcresrw);
+    rwc = rwc + 1;
+  end;
+  ClearRow(EPCalcResr,EPCalcResrw,0);
+  
+  size = 0; ClearArray(amounts); ClearArray(trtypes); ClearArray(doctypes);
+  AddNonTaxableData(EPCalcResr,trtypes,amounts,doctypes,size); 
+  rwc = MatRowCnt(EPCalcresr);
+  for (i = 0;i < size; i = i + 1) begin
+    EPCalcresrw.Sum = round(amounts[i],SetRoundModeD(2));
+    EPCalcresrw.TrType = trtypes[i];
+    EPCalcResrw.RefDocType = doctypes[i];
+    EPTrTyper.Code = trtypes[i];
+    if (ReadFirstMain(EPTrTyper,1,true)) then begin
+      EPCalcResrw.Comment = EPTrTyper.Name;
+      EPCalcResrw.Objects = EPTrTyper.Objects;
+    EPCalcResrw.IncType = EPCalcResrw.IncType;
+    end;
+    MatRowPut(EPCalcresr,rwc,EPCalcresrw);
+    rwc = rwc + 1;
+  end;
+  
+  ar = MatRowCnt(EPCalcResr);
+
+  for (i=0;i<ar;i=i+1) begin
+    MatRowGet(EPCalcResr,i,EPCalcResrw);
+    if (nonblank(EPCalcResrw.TrType)) then begin
+      addvarvalAdd(EPCalcResrw.TrType,vararrayobj,ValToString(EPCalcResrw.Sum,M423Val,"",".",0));
+      if(blank(EPCalcresrw.Objects)) then begin
+        addvarvaladd(EPCalcResrw.TrType,vararray,ValToString(EPCalcResrw.Sum,M423Val,"",".",0));
+      end;      
+    end;
+  end;
+  
+  //ShowTempArray(vararrayobj);
+  //ShowTempArray(vararray);
+  
+  i = tempint;
+  ar=MatRowCnt(EPCalcResr);
+  size = 0;
+  RecordNew(tempvarar);
+    /* calculating how many different objects are in the record */
+  RefreshObjectList(EPCalcResr,objcodes,obj_vararray,size);
+  AddObjToObjList(objcodes,obj_vararray,size,avsal_obj);
+    //---------------
+  
+  if (foundTaxf) then begin
+    ar=MatRowCnt(TaxRepr);
+    i = MatRowCnt(EPCalcresr);
+    for (j=0;j<ar;j=j+1) begin
+          i = MatRowCnt(EPCalcresr);
+          MatRowGet(TaxRepr,j,TaxReprw);
+          formula = TaxReprw.Formula;
+          tstr = formula;
+          FindCalcResAvSal("AVSAL",EPCalcResr,tstr,tstr,GetObjectAmount(avsal_sum,avsal_obj,""));
+          FindCalcResAvSal("AVHSAL",EPCalcResr,tstr,tstr,GetObjectAmount(avsalhours_sum,avsalhours_obj,""));
+          FindCalcResAvSal("HOURS",EPCalcResr,tstr,tstr,whours);
+          FindCalcResAvSal("HOURS2",EPCalcResr,tstr,tstr,whours2);
+          
+          EPFindSplitSalary(EPContractr,EPCalcResr,tstr,true,"");
+          TaxReprw.Formula = tstr;
+          tempa = valtostring(FCALCWITHVARPayCheckSum(TaxReprw.Formula,vararray,TaxReprw.FCode,EPCalcResr),M4Val,"",".",0);  
+          tstr = formula;
+          FindCalcResAvSal("AVSAL",EPCalcResr,tstr,tstr,dayamount);
+          FindCalcResAvSal("AVHSAL",EPCalcResr,tstr,tstr,dayamounthours);
+          FindCalcResAvSal("HOURS",EPCalcResr,tstr,tstr,whours);
+          FindCalcResAvSal("HOURS2",EPCalcResr,tstr,tstr,whours2);
+
+          EPFindSplitSalary(EPContractr,EPCalcResr,tstr,false,"");
+          TaxReprw.Formula = tstr;
+          tempaobj=valtostring(FCALCWITHVARPayCheckSum(TaxReprw.Formula,vararrayobj,TaxReprw.FCode,EPCalcResr),M4Val,"",".",0);
+          alreadyaddedf = false;
+          if (TaxReprw.FCode==EPPayrollSetr.NettoName) then begin
+            EPCalcResr.Netto=StringToVal(tempaobj,M4Val);            
+          end;
+          if (TaxReprw.FCode==EPPayrollSetr.BruttoName) then begin
+            EPCalcResr.Brutto=StringToVal(tempaobj,M4Val);            
+          end;
+          EPCalcResr.StatusFlag=3;
+          if (EPPayrollSetr.CalcTrTypeFlag==0) then begin
+            for (k=0;k<ark;k=k+1) begin
+              MatRowGet(EPContractr,k,EPContractrw);
+              if (EPContractrw.Type==0) and (EPContractrw.TrType==TaxReprw.FCode) then begin
+                EPCalcResrw.TrType=TaxReprw.FCode;
+                EPCalcResrw.Comment=EPContractrw.Text;
+                EPTrTyper.Code = EPCalcResrw.TrType;
+                EPCalcResrw.RefDocType = 0;
+                EPCalcResrw.RefDocStr = "";
+                EPCalcResrw.Objects = "";
+                //EPCalcResrw.IncType = "";
+                if (ReadFirstMain(EPtrTyper,1,true)) then begin 
+                  if (blank(EPCalcResrw.Objects)) then begin
+                    EPCalcResrw.Objects = EPTrTyper.Objects;
+                  end;
+                  if (EPTrtyper.AllowSep==0 or size == 0) then begin
+                    EPCalcResrw.Sum = StringToVal(tempaobj,M4Val);
+                    EPCalcResrw.IncType = EPtrTyper.IncType;
+                    MatRowPut(EPCalcResr,i,EPCalcResrw);
+                    i=i+1;
+                  end else begin
+                    if (EPTrtyper.AllowSep==1) then begin
+                      EPCalcResrw.Sum = StringToVal(tempa,M423Val);
+                      EPCalcResrw.IncType = EPtrTyper.IncType;
+                      MatRowPut(EPCalcResr,i,EPCalcResrw);
+                      alreadyaddedf = true;
+                      i=i+1;
+                    end;
+                  end;
+                end;
+                k=ark;
+              end;
+            end;
+          end else begin
+            if (TrTypeAlreadyAdded(EPCalcResr,TaxReprw.FCode)==false) then begin
+              EPCalcResrw.TrType=TaxReprw.FCode;
+              EPTrTyper.Code = EPCalcResrw.TrType;
+              EPCalcResrw.RefDocType = 0;
+              EPCalcResrw.RefDocStr = "";
+              EPCalcResrw.Objects = "";
+              //EPCalcResrw.IncType = "";
+              if (ReadFirstMain(EPtrTyper,1,true)) then begin                
+                EPCalcResrw.Comment=EPtrTyper.Name;
+                if (blank(EPCalcResrw.Objects)) then begin
+                  EPCalcResrw.Objects = EPTrTyper.Objects;
+                end;
+                if (EPTrtyper.AllowSep==0 or size == 0) then begin
+                  EPCalcResrw.Sum = StringToVal(tempaobj,M423Val);
+                  EPCalcResrw.IncType = EPtrTyper.IncType;
+                  MatRowPut(EPCalcResr,i,EPCalcResrw);
+                  i=i+1;
+                end else begin
+                  if (EPTrtyper.AllowSep==1) then begin
+                    EPCalcResrw.Sum = StringToVal(tempa,M423Val);
+                    EPCalcResrw.IncType = EPtrTyper.IncType;
+                    MatRowPut(EPCalcResr,i,EPCalcResrw);
+                    alreadyaddedf = true;
+                    i=i+1;
+                  end;
+                end;
+              end;
+            end;
+          end;
+          MatRowGet(TaxRepr,j,TaxReprw);
+          RefreshObjectList(EPCalcResr,objcodes,obj_vararray,size);
+         CalcObjectForSingleOperation(EPCalcResr,EPContractr,taxgroup,Objcodes,size,d1,d2,EPPayrollSetr,EPConstr,TaxReprw,TaxReprw.Formula,vararrayobj,obj_vararray,alreadyaddedf,avsal_sum,avsal_obj,avsalhours_sum,avsalhours_obj);
+        end;
+  end;
+  
+  FillCalcDayFields(EPCalcResr);//for av sal
+
+  UpdateAvMonth(EPCalcresr);
+  UpdateUserFields(EPCalcResr);
+  
+  if (isrefreshf==false and refreshf) then begin
+    EPCalc2(EPCalcResr,EPEntryrw,EPEntrySetbl,true);
+  end;
+  
+  return;
+end;
+
+global 
+procedure EPCalc(var record EPCalcResVc EPCalcResr,row EPEntryVc EPEntryrw,record EPEntrySetBlock EPEntrySetbl)
+begin 
+
+  EPCalc2(EPCalcResr,EPEntryrw,EPEntrySetbl,false);
+  
+  return;
+end;
