@@ -1,0 +1,216 @@
+event startup
+begin
+
+  SetLangMode(LangLatvian, "LAT", 0);
+	
+	Setting("Poz´cijas",PosLClass,modIN);// Edit ************************** BPI Ukraine - KramarAlexandr - Tuesday, 21 August 2018 12:04:12
+	
+	//  SetBegin(98);
+  SetBegin(117);
+  SetText(0,"Cits");
+  SetText(1,"PieÀemäana");
+  SetText(2,"Atlaiäana");
+  SetText(3,"P‚rvietoäana");
+  SetText(4,"Algas izmaiÀas");
+  SetText(5,"Pr•mija");
+  SetText(6,"Atvaºin‚jums");
+  SetText(7,"Komand•jums");
+  SetText(8,"Statusa maiÀa");
+  EndSet;
+
+  SetBegin(118);
+//  SetBegin(99);
+  SetText(0,"Apr•úin‚t");
+  SetText(1,"Uzst‚d´t");
+  SetText(2,"Uzst‚d´t pamatalgu");
+  EndSet;
+
+//  SetBegin(97);
+  SetBegin(119);
+  Settext(0,"Plus");
+  Settext(1,"M´nus");
+  endSet;
+
+  SetBegin(100);
+  SetText(0,"Nemain´t");
+  SetText(1,"Samazin‚t");
+  endset;
+
+  Setbegin(105);
+  SetText(0,"Darba dienas");
+  SetText(1,"Visas dienas");
+  SetText(2,"Sv•tku dienas un br´vdienas");
+  SetText(3,"Oper‚ciju tips");
+  SetText(4,"Dienas no laika uzskaites tabulas");
+  endset;
+
+  SetBegin(106);
+  SetText(0,"Nav");
+  SetText(1,"Apr•úina periods");
+  SetText(2,"M•neäa periods");
+  SetText(3,"+ ja s‚kas period‚");
+  SetText(4,"+ ja beidzas period‚");
+  SetText(5,"- ja s‚kas period‚");
+  SetText(6,"- ja beidzas period‚");
+  SetText(7,"+ vienm•r");
+  SetText(8,"- vienm•r");
+  SetText(9,"+ p‚rskata period‚");
+  endset;
+
+  Setbegin(107);
+  SetText(0,"Pa m•neäiem");
+  SetText(1,"Kop‚");
+  EndSet;
+
+  Setbegin(108);
+  SetText(0,"Kalend‚r‚s dienas");
+  SetText(1,"Darba dienas");
+  EndSet;
+
+  Setbegin(109);//document type
+  SetText(0,"-");
+  SetText(1,"Kav•jums");
+  SetText(2,"Piemaksa");
+  SetText(3,"Atvieglojums");
+  SetText(4,"Apg‚d‚jamie");
+  SetText(5,"Laika tabula (vecais re®istrs)");
+  SetText(8,"Laika tabula");
+  SetText(6,"Konstante");
+  SetText(7,"L´gums");
+  SetText(8,"Kori®•tais apr•úins");
+  SetText(9,"Ievades matrica");
+  EndSet;
+
+  Setbegin(110);//print in emp doc flag
+  SetText(0,"Druk‚t");
+  SetText(1,"Nedruk‚t");
+  EndSet;
+
+
+  Setbegin(111);
+  SetText(0,"Neeksport•t, ja nav apr•úin‚ts");
+  SetText(1,"Vienm•r eksport•t");
+  EndSet;
+
+  Setbegin(112);
+  SetText(0,"Summu sadaºa");
+  SetText(1,"Darbinieka parametri");
+  EndSet;
+
+  Setbegin(113);
+  SetText(0,"Iekºaut apr•úinu vad´b‚");
+  SetText(1,"Neiekºaut");
+  SetText(2,"Iekºaut tikai kav•jumos");
+  EndSet;
+
+
+  SetBegin(8614);
+  SetText(0,"");
+  SetText(1,"1");
+  SetText(2,"2");
+  SetText(3,"3");
+  SetText(4,"4");
+  SetText(5,"5");
+  SetText(6,"6");
+  SetText(7,"7");
+  SetText(8,"8");
+  SetText(9,"9");
+  SetText(10,"10");
+  SetText(-2,"Br");
+  EndSet;
+
+  SetBegin(8615);
+  SetText(0,"Nek‚ds");
+  SetText(1,"Apm‚c´bu");
+  SetText(2,"Atvaºin‚juma");
+  SetText(3,"Departamenta izveide");
+  SetText(4,"Amata izveide");
+  EndSet;
+
+
+  SetBegin(8616);
+  SetText(0,"Nek‚ds");
+  SetText(1,"Piepras´jumi");
+  SetText(2,"R´kojumi");
+  EndSet;
+
+
+  SetBegin(8617);
+  SetText(0,"Nav nepiecieäams");
+  SetText(1,"Apstiprin‚jums no viena");
+  SetText(2,"Apstiprin‚jums no visiem");
+  EndSet;
+
+  SetBegin(8618);
+  SetText(0,"Nav nepiecieäama");
+  SetText(1,"Ir nepiecieäama");
+  EndSet;
+
+  SetBegin(8619);
+  SetText(0,"IzmaiÀas");
+  SetText(2,"L´guma p‚rtraukäana");
+  SetText(3,"P‚rvietoäana");
+  SetText(4,"Algas izmaiÀas");
+  EndSet;
+
+  SetBegin(8620);
+  SetText(0,"Nav");
+  SetText(1,"Atk‚päan‚s no amata");
+  SetText(2,"L´guma nepagarin‚äana");
+  SetText(3,"Atst‚din‚äana - ekspluat‚cijas pras´b‚m");
+  SetText(4,"Atst‚din‚äana - p‚rk‚pums");
+  SetText(5,"Atst‚din‚äana - nesp•ja");
+  SetText(6,"Aizieäana pensij‚");
+  SetText(7,"N‚ve");
+  EndSet;
+
+
+  SetBegin(8621);
+  Settext(0,"Nav");
+  SetText(1,"Ir");
+  EndSet;
+
+
+  SetBegin(8622);
+  Settext(0,"-");
+  SetText(1,"Summa teksta veid‚");
+  EndSet;
+
+  SetBegin(8623);
+  Settext(0,"Apr•úina gr‚matojums");
+  SetText(1,"Maks‚juma gr‚matojums");
+  EndSet;
+
+  SetBegin(8624);
+  Settext(0,"R´kojuma rinda");
+  SetText(1,"R´kojuma galvene");
+  EndSet;
+
+  SetBegin(8625);
+  Settext(0,"-");
+  SetText(10,"Darbinieks");
+  SetText(11,"Fiziska persona");
+  EndSet;
+
+  SetBegin(8626);
+  Settext(0,"-");
+  SetText(1,"Tab1");
+  SetText(2,"Tab2");
+  SetText(3,"Tab3");
+  SetText(4,"Tab4");
+  SetText(5,"Tab5");
+  SetText(6,"Tab6");
+  SetText(7,"Tab7");
+  SetText(8,"Tab8");
+  SetText(9,"Tab9");
+  SetText(10,"Tab10");
+  SetText(11,"Tab11");
+  SetText(12,"Tab12");
+  SetText(13,"Tab13");
+  SetText(14,"Tab14");
+  SetText(15,"Tab15");
+  SetText(16,"Tab16");
+  EndSet;
+	
+	return;
+end;
