@@ -1,9 +1,0 @@
-event startup
-begin
-
-  SetLangMode(LangLithuanian, "LIT", 0);
-	
-	Setting("Pozicijos",PosLClass,modIN);// Edit ************************** BPI Ukraine - KramarAlexandr - Tuesday, 21 August 2018 12:04:12
-	
-	return;
-end;

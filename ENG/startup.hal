@@ -1,7 +1,0 @@
-event startup
-begin
-	
-	Setting("Positions",PosLClass,modIN);// Edit ************************** BPI Ukraine - KramarAlexandr - Tuesday, 21 August 2018 12:04:12
-	
-	return;
-end;
