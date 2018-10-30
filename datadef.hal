@@ -8,7 +8,7 @@ SOURCEFILE("halcust\\Level0\\RActions",0);
 SOURCEFILE("halcust\\Level0\\Reports",0);
 SOURCEFILE("halcust\\Level0\\Tools",0);
 SOURCEFILE("halcust\\Level0\\WActions",0);
-SOURCEFILE("halcust\\Level0\\EP",0);
+SOURCEFILE("halcust\\Level0\\EPCust",0);
 
 SourceFile("halcust\\Documents",3);
 SourceFile("halcust\\Imports",3);
