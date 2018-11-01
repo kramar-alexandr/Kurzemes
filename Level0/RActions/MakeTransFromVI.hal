@@ -1042,10 +1042,8 @@ LkInvoiceRowTypeNormal_MakeTrans:;
               end;  
               rs = MulRateToBase1(VIp.CurncyCode,rvatval,vatfrrate,vattorate1,vattorate2,vatbaserate1,vatbaserate2,DefaultCurRoundOff);
               if (CheckTTRPerRow("VIVc",svatacc,vatobjstr,dc2,taccnumber,0)) then begin end;
-              // Edit ************************** BPI Ukraine - KramarAlexandr - Thursday, 1 November 2018 13:52:45
               AddEuroCurncyTrRow(gTRp,svatacc,vatobjstr,AddVATCodeToVATAccRows(VATrw.VATCode),tstr,rs,false,dc2,totsum,
                                  VIp.CurncyCode,vatfrrate,vattorate1,vattorate2,vatbaserate1,vatbaserate2,rvatval,nilv,-1,VIp.InvType==kInvoiceTypeCredit or VIp.InvType==kInvoiceTypeCreditSpecialSales,taccnumber);
-              // Edit ************************** BPI Ukraine - KramarAlexandr - Thursday, 1 November 2018 13:52:51   add AddVATCodeToVATAccRows(VATrw.VATCode)
               totrvrsvat = totrvrsvat + rvatval;
             end;
           end;
