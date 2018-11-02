@@ -371,12 +371,36 @@ begin
                             pfr,pto1,pto2,pbr1,pbr2,rs,blankval,-1,VIp.InvType==kInvoiceTypeCredit or VIp.InvType==kInvoiceTypeCreditSpecialSales,"");
          
        end else begin
-
-        vatacc = APAccb.OnAccVAT;
+				
+				vatacc = APAccb.OnAccVAT;
         if (GetAccName(vatacc,tstr,60)==false) then begin
           res = 1912;
           goto LAddVIPrePayRow;
         end;
+lBPIFastFoto:;// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 26 October 2018 18:51:10
+        AddEuroCurncyTrRow(gTRp,vatacc,vatobjstr,AddVATCodeToVATAccRows(VIrw.VATCode),tstr,bookrs,false,dc2,totsum,VIp.CurncyCode,
+                           pfr,pto1,pto2,pbr1,pbr2,rs,blankval,-1,VIp.InvType==kInvoiceTypeCredit or VIp.InvType==kInvoiceTypeCreditSpecialSales,"");
+        FindPurchVATAcc(VIrw.VATCode,vatacc);
+        GetVATRow(VIrw.VATCode,VATCbrw);
+        if (APAccb.PostVIVATonVATCorr!=0) then begin
+          vatacc = VATCbrw.CorPurchVATAcc;
+        end;
+        if (blank(vatacc)) then begin        
+          vatacc = APAccb.VATAcc;
+        end;
+        if (GetAccName(vatacc,tstr,60)==false) then begin
+          res = 1912;
+          goto LAddVIPrePayRow;
+        end;
+        AddEuroCurncyTrRow(gTRp,vatacc,vatobjstr,AddVATCodeToVATAccRows(VIrw.VATCode),tstr,bookrs,APAccb.PreOPBookVAT!=0,dc1,totsum,VIp.CurncyCode,//GetVATLaw==45, 
+                           pfr,pto1,pto2,pbr1,pbr2,rs,blankval,-1,VIp.InvType==kInvoiceTypeCredit or VIp.InvType==kInvoiceTypeCreditSpecialSales,"");
+
+        /*vatacc = APAccb.OnAccVAT;
+        if (GetAccName(vatacc,tstr,60)==false) then begin
+          res = 1912;
+          goto LAddVIPrePayRow;
+        end;
+        //  Like as 8.4// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 2 November 2018 10:36:03
         FindPurchVATAcc(VIrw.VATCode,vatacc);
         GetVATRow(VIrw.VATCode,VATCbrw);
         TaxRr.Code = VATCbrw.TaxRules;
@@ -384,7 +408,9 @@ begin
         if (TaxRr.VATType==kVATTypeReversed) then begin
           VIGetVATCodeAccNumbers(VIrw.VATCode,APAccb,VIp.VECode,VIp.InvType,vatacc,pvatacc);
         end;
-lBPIFastFoto:;// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 26 October 2018 18:51:10
+        
+       
+        
         AddEuroCurncyTrRow(gTRp,vatacc,vatobjstr,AddVATCodeToVATAccRows(VIrw.VATCode),tstr,bookrs,false,dc2,totsum,VIp.CurncyCode,
                            pfr,pto1,pto2,pbr1,pbr2,rs,blankval,-1,VIp.InvType==kInvoiceTypeCredit or VIp.InvType==kInvoiceTypeCreditSpecialSales,"");
         if (TaxRr.VATType==kVATTypeReversed) then begin
@@ -403,6 +429,7 @@ lBPIFastFoto:;// Edit ************************** BPI Ukraine - KramarAlexandr - 
         end;
         AddEuroCurncyTrRow(gTRp,vatacc,vatobjstr,AddVATCodeToVATAccRows(VIrw.VATCode),tstr,bookrs,APAccb.PreOPBookVAT!=0 and TaxRr.VATType!=kVATTypeReversed,dc1,totsum,VIp.CurncyCode,//GetVATLaw==45, 
                            pfr,pto1,pto2,pbr1,pbr2,rs,blankval,-1,VIp.InvType==kInvoiceTypeCredit or VIp.InvType==kInvoiceTypeCreditSpecialSales,"");
+      */
       end;
     end;
     if ((OPBookVAT!=0) and (APAccb.PreOPBookVAT==0)) then begin
